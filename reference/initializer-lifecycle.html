@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Initializer 生命周期速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0027-initializer-lifecycle.html">第 27 课</a></header>
+<h1>Initializer 生命周期</h1>
+<pre><code>fn initializers(ctx) -&gt; Result&lt;Vec&lt;Box&lt;dyn Initializer&gt;&gt;&gt;
+
+Initializer:
+  name()
+  before_run(ctx)
+  after_routes(router, ctx)
+  check(ctx) // cargo loco doctor</code></pre>
+<table><tr><th>需求</th><th>位置</th></tr><tr><td>装配 SharedStore</td><td><code>Hooks::after_context</code></td></tr><tr><td>预热一次性资源</td><td><code>Initializer::before_run</code></td></tr><tr><td>健康检查</td><td><code>Initializer::check</code></td></tr><tr><td>路由完成后接入 Axum</td><td><code>Initializer::after_routes</code></td></tr></table>
+<p class="source"><a href="https://loco.rs/docs/explanation/architecture/">官方 request lifecycle</a> · <a href="https://loco.rs/docs/reference/hooks/">官方 Hooks</a></p>
+</body></html>

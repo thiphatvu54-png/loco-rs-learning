@@ -1,5 +1,9 @@
 # Notes
 
+- 第 28 课已创建：按 Loco 1.2 源码厘清 `Hooks::after_routes`、默认 middleware 与 `Initializer::after_routes` 的真实包装顺序。
+
+- 第 27 课已创建：学习 Loco `Initializer` 的 `before_run`、`after_routes`、`check` 生命周期，以及它和 `after_context` 的边界。
+
 - 第 26 课已创建：用 `after_context` 装配应用服务，再通过 Loco 的 `SharedStore<T>` extractor 按类型注入 handler。
 
 - 第 25 课已创建：用 Loco 的 `settings:` 和 `Config::settings::<T>()` 给自定义 middleware 提供环境配置，并解释 `Hooks::middlewares` 的错误边界。

@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-28-after-routes-order",
+  "lesson": 28,
+  "topic": "Hooks and Initializer after_routes ordering",
+  "status": "lesson-created",
+  "next_steps": [
+    "register two initializers with after_routes",
+    "verify their wrapper order with a request test",
+    "add one diagnostic route after the main route graph"
+  ]
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 28 课：after_routes 的真实顺序</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 28 课 · <a href="../index.html">目录</a> · <a href="../reference/after-routes-order.html">速查</a></header>
+<h1>after_routes：谁最后包住 Router</h1>
+<p class="lede">难点是顺序：Loco 的默认 middleware 在 <code>Routes::to_router</code> 内先套上，之后才执行 <code>Hooks::after_routes</code>，最后才轮到每个 Initializer 的 <code>after_routes</code>。</p>
+
+<h2>1. 以当前源码为准的链</h2>
+<pre><code>H::before_routes(ctx)
+    ↓
+H::routes(ctx).to_router(...)
+    ├─ 注册 controller routes
+    └─ 应用 H::middlewares(ctx)
+    ↓
+H::after_routes(router, ctx)
+    ↓
+initializer.after_routes(router, ctx)  // 按注册顺序
+    ↓
+serve</code></pre>
+<p>这意味着 Initializer 的 <code>after_routes</code> 是最后一个可改造 Router 的生命周期点。它适合挂诊断端点、追加 Axum layer，或把外部组件接到已经完成的路由图上。</p>
+
+<h2>2. 在 Initializer 中追加一个诊断 layer</h2>
+<pre><code>use axum::{middleware, Router as AXRouter};
+use loco_rs::{app::{AppContext, Initializer}, Result};
+
+struct Diagnostics;
+
+async fn mark_diagnostic(response: axum::response::Response)
+    -&gt; axum::response::Response
+{
+    response
+}
+
+#[async_trait]
+impl Initializer for Diagnostics {
+    fn name(&amp;self) -&gt; String { "diagnostics".into() }
+
+    async fn after_routes(
+        &amp;self,
+        router: AXRouter&lt;AppContext&gt;,
+        _ctx: &amp;AppContext,
+    ) -&gt; Result&lt;AXRouter&lt;AppContext&gt;&gt; {
+        Ok(router.layer(middleware::map_response(mark_diagnostic)))
+    }
+}</code></pre>
+<p>这个 layer 在默认 Loco middleware 之外再包一层。响应离开 handler 时，先经过 initializer 的 layer，再经过之前的默认栈。</p>
+
+<h2>3. 和 Hooks::after_routes 的区别</h2>
+<table><tr><th>扩展点</th><th>适合</th><th>顺序</th></tr>
+  <tr><td><code>Hooks::after_routes</code></td><td>应用只有一段全局 Router 改造逻辑</td><td>默认 middleware 后</td></tr>
+  <tr><td><code>Initializer::after_routes</code></td><td>可独立启用、可健康检查的模块化组件</td><td>Hooks after_routes 后，按注册顺序</td></tr>
+  <tr><td><code>Routes::layer</code></td><td>单个 Routes/controller 组</td><td>路由组内部</td></tr>
+</table>
+
+<h2>4. 注册多个 Initializer 时的顺序</h2>
+<pre><code>Ok(vec![
+    Box::new(AuditInitializer),
+    Box::new(Diagnostics),
+])</code></pre>
+<p>调用顺序是 <code>AuditInitializer.after_routes</code> → <code>Diagnostics.after_routes</code>。后一个 initializer 对 Router 的包装更外层，因此入站请求先看到 <code>Diagnostics</code>。</p>
+
+<div class="quiz" id="q1"><p class="q">谁最后执行 after_routes？</p>
+  <button data-ok="0">Routes::layer</button><button data-ok="0">Hooks::after_routes</button><button data-ok="1">最后注册的 Initializer</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">想做模块化且可被 cargo loco doctor 检查的路由扩展，应选什么？</p>
+  <button data-ok="1">Initializer</button><button data-ok="0">普通 handler</button><button data-ok="0">Model Entity</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：Initializer 是模块化的最后一道 Router 扩展点。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/explanation/architecture/">Loco 官方：request lifecycle</a> · <a href="https://loco.rs/docs/reference/hooks/">Hooks trait</a></p>
+<p>下一步可以挑战：注册两个 initializer，一个追加诊断 header，一个追加诊断 route，然后用请求测试证明它们的外层顺序。</p>
+<nav class="next"><a href="0027-initializer-lifecycle.html">← 第 27 课：Initializer 生命周期</a><a href="../reference/after-routes-order.html">打开速查 →</a></nav>
+</body>
+</html>

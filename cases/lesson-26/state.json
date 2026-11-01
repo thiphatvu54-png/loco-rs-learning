@@ -2,7 +2,7 @@
   "slug": "lesson-26-shared-store-di",
   "lesson": 26,
   "topic": "SharedStore and type-based dependency injection",
-  "status": "lesson-created",
+  "status": "follow-up-completed",
   "next_steps": [
     "insert a custom service in after_context",
     "extract it from a handler with SharedStore<T>",

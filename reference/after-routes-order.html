@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>after_routes 顺序速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0028-after-routes-order.html">第 28 课</a></header>
+<h1>after_routes 顺序</h1>
+<pre><code>before_routes
+  → routes.to_router（注册路由 + 默认 middleware）
+  → Hooks::after_routes
+  → Initializer::after_routes（注册顺序）
+  → serve</code></pre>
+<table><tr><th>需要</th><th>位置</th></tr><tr><td>单 controller layer</td><td><code>Routes::layer</code></td></tr><tr><td>全局一次性改造</td><td><code>Hooks::after_routes</code></td></tr><tr><td>可检查的模块化扩展</td><td><code>Initializer::after_routes</code></td></tr></table>
+<p>多个 initializer 中，后注册者包在更外层，入站请求先遇到它。</p>
+<p class="source"><a href="https://loco.rs/docs/explanation/architecture/">官方 request lifecycle</a> · <a href="https://loco.rs/docs/reference/hooks/">官方 Hooks</a></p>
+</body></html>

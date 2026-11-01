@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-27-initializer-lifecycle",
+  "lesson": 27,
+  "topic": "Loco Initializer lifecycle and doctor checks",
+  "status": "follow-up-completed",
+  "next_steps": [
+    "register one initializer",
+    "implement a meaningful check for cargo loco doctor",
+    "compare initializer after_routes with Hooks after_routes"
+  ]
+}

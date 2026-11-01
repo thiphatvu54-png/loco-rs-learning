@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 27 课：Loco Initializer 生命周期</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 27 课 · <a href="../index.html">目录</a> · <a href="../reference/initializer-lifecycle.html">速查</a></header>
+<h1>Initializer：把一次性启动逻辑从 Hooks 拆出来</h1>
+<p class="lede">Initializer 是 Loco 独有的生命周期组件：它可以在启动前做一次初始化、在路由完成后继续改造 Router，还能接入 <code>cargo loco doctor</code> 健康检查。</p>
+
+<h2>1. 当前版本的真实顺序</h2>
+<pre><code>after_context(ctx)
+    ↓
+Hooks::before_run(ctx)
+    ↓
+Hooks::initializers(ctx)
+    ↓
+initializer.before_run(ctx)      // 每个 initializer
+    ↓
+before_routes → routes.to_router  // 路由 + MiddlewareLayer
+    ↓
+Hooks::after_routes(router, ctx)
+    ↓
+initializer.after_routes(router, ctx)
+    ↓
+serve / worker / scheduler</code></pre>
+<p>关键差异：<code>Initializer</code> 的 <code>before_run</code> 和 <code>after_routes</code> 都有独立的错误返回值；它不是一个只能返回 Vec 的简单回调。</p>
+
+<h2>2. 定义一个 initializer</h2>
+<pre><code>use loco_rs::{
+    app::{AppContext, Initializer},
+    doctor::{Check, CheckStatus},
+    Result,
+};
+
+struct PaymentsInitializer;
+
+#[async_trait]
+impl Initializer for PaymentsInitializer {
+    fn name(&amp;self) -&gt; String {
+        "payments".to_owned()
+    }
+
+    async fn before_run(&amp;self, ctx: &amp;AppContext) -&gt; Result&lt;()&gt; {
+        // 例如：预热一个客户端，或验证 SharedStore 中的依赖
+        if !ctx.shared_store.contains::&lt;PaymentClient&gt;() {
+            return Err(Error::Message("PaymentClient missing".into()));
+        }
+        Ok(())
+    }
+
+    async fn check(&amp;self, _ctx: &amp;AppContext) -&gt; Result&lt;Option&lt;Check&gt;&gt; {
+        Ok(Some(Check {
+            status: CheckStatus::Ok,
+            message: "payments initializer ready".into(),
+            description: None,
+        }))
+    }
+}</code></pre>
+<p><code>check</code> 会被 <code>cargo loco doctor</code> 调用；它适合检查连接配置、必需依赖和外部服务可达性。不要把每个请求都做的逻辑放进 initializer。</p>
+
+<h2>3. 在 App 中注册</h2>
+<pre><code>async fn initializers(
+    _ctx: &amp;AppContext,
+) -&gt; Result&lt;Vec&lt;Box&lt;dyn Initializer&gt;&gt;&gt; {
+    Ok(vec![Box::new(PaymentsInitializer)])
+}</code></pre>
+<p>把它放进 <code>impl Hooks for App</code>。Loco 会记录 initializer 名称，并在适当的启动阶段调用它。</p>
+
+<h2>4. 什么时候用哪个 Hook</h2>
+<table><tr><th>扩展点</th><th>选择它的理由</th></tr>
+  <tr><td><code>after_context</code></td><td>替换 AppContext 字段，或把服务放入 SharedStore</td></tr>
+  <tr><td><code>before_run</code></td><td>一次性预热，适用于所有运行模式</td></tr>
+  <tr><td><code>Initializer::check</code></td><td>让 <code>cargo loco doctor</code> 检查你的依赖</td></tr>
+  <tr><td><code>Initializer::after_routes</code></td><td>在路由构建后再接入 Axum 逻辑</td></tr>
+</table>
+
+<div class="quiz" id="q1"><p class="q">想让自定义依赖出现在 cargo loco doctor 检查中，应实现什么？</p>
+  <button data-ok="0">Routes::layer</button><button data-ok="1">Initializer::check</button><button data-ok="0">JWTWithUser</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">想把服务放进 AppContext 的 shared_store，优先使用哪个 Hook？</p>
+  <button data-ok="1">after_context</button><button data-ok="0">after_routes</button><button data-ok="0">handler</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：Initializer 负责一次性生命周期，doctor 走 check。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/explanation/architecture/">Loco 官方：request lifecycle</a> · <a href="https://loco.rs/docs/reference/hooks/">Hooks trait</a></p>
+<p>下一步可以挑战：让 initializer 在 <code>after_routes</code> 中安装一个只用于诊断的 Axum route，并验证它与全局 middleware 的先后关系。</p>
+<nav class="next"><a href="0026-shared-store-di.html">← 第 26 课：SharedStore 依赖注入</a><a href="../reference/initializer-lifecycle.html">打开速查 →</a></nav>
+</body>
+</html>
