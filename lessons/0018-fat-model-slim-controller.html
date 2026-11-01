@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 18 课：Fat Model，Slim Controller</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速学 · 第 18 课 · <a href="../index.html">目录</a> · <a href="../reference/model-controller-boundary.html">Model/Controller 速查</a></header>
+<h1>Fat Model，Slim Controller：把规则放在正确的边界</h1>
+<p class="lede">目标：识别 controller 里的数据库业务逻辑，并把可复用规则下沉到 model/entity。</p>
+
+<h2>1. 当前 categories 已经有两个好例子</h2>
+<pre><code>// src/models/categories.rs
+pub fn search(q: Option&lt;&amp;str&gt;) -&gt; sea_orm::Select&lt;Self&gt; { ... }
+
+pub async fn ensure_name_unique(
+    db: &amp;DatabaseConnection,
+    name: &amp;str,
+    except_id: Option&lt;i64&gt;,
+) -&gt; ModelResult&lt;()&gt; { ... }</code></pre>
+<p>controller 只负责拿到参数，然后调用：</p>
+<pre><code>Entity::ensure_name_unique(&amp;ctx.db, &amp;params.name, None).await?;
+let res = query::paginate(&amp;ctx.db, Entity::search(filter.q.as_deref()), None, &amp;pagination).await?;</code></pre>
+
+<h2>2. 什么算 Fat Controller</h2>
+<p>下面这种写法把可复用的查询规则藏在 HTTP 层：</p>
+<pre><code>let query = Entity::find()
+    .filter(categories::Column::Name.contains(q))
+    .order_by_asc(categories::Column::Id);</code></pre>
+<p>如果后台任务、CLI Task、另一个接口也需要同样规则，就会复制代码。把它放到 <code>Entity::search</code> 后，所有入口共享同一个领域查询。</p>
+
+<h2>3. 三条边界</h2>
+<table><tr><th>层</th><th>负责</th><th>不负责</th></tr>
+<tr><td>Controller</td><td>提取参数、鉴权、调用、渲染响应</td><td>隐藏的业务查询细节</td></tr>
+<tr><td>Model/Entity</td><td>finder、查询规则、唯一性、状态转移</td><td>HTTP header 和 JSON 格式</td></tr>
+<tr><td>DTO</td><td>输入/输出结构</td><td>数据库查询规则</td></tr></table>
+
+<h2>4. 快速练习</h2>
+<div class="task"><ol>
+<li>找出 categories controller 中一个可以复用的查询片段。</li>
+<li>把它设计成 <code>impl Entity</code> 或 <code>impl Model</code> 上的方法。</li>
+<li>让 controller 只保留“提取 → 调用 → 返回”。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">“名称不能重复”应该放在哪里？</p>
+<button data-ok="1">Model 或 Entity 规则</button><button data-ok="0">每个 Controller 各写一遍</button><button data-ok="0">DTO 的 Serialize 实现</button><p class="fb" aria-live="polite"></p></div>
+<div class="quiz" id="q2"><p class="q">为什么 controller 应该尽量薄？</p>
+<button data-ok="1">规则可被多入口复用</button><button data-ok="0">减少数据库表数量</button><button data-ok="0">避免所有错误处理</button><p class="fb" aria-live="polite"></p></div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) { var fb=quiz.querySelector('.fb'); quiz.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right','wrong'); }); var ok=b.dataset.ok==='1'; b.classList.add(ok?'right':'wrong'); fb.textContent=ok?'答对。领域规则集中后，HTTP、Task、Worker 都能复用。':'再想一次：可复用的业务规则应靠近 Model/Entity。'; }); }); });
+</script>
+
+<h2>主要阅读</h2>
+<p>阅读项目内的 <code>.claude/skills/loco/doctrine.md</code>，重点是 “Fat model, slim controller”。</p>
+<p>完成后告诉我：你会把哪个 controller 片段下沉到 model，以及方法名是什么。</p>
+<nav class="next"><a href="0017-pagination-filtering.html">← 第 17 课：分页与过滤</a><a href="../reference/model-controller-boundary.html">打开边界速查 →</a></nav>
+</body></html>

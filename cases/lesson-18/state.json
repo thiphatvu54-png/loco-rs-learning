@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-18-fat-model-slim-controller",
+  "lesson": 18,
+  "topic": "Fat Model, Slim Controller",
+  "status": "lesson-created",
+  "next_steps": [
+    "find a reusable controller query",
+    "move it to Model or Entity",
+    "keep the controller as extract-call-render"
+  ]
+}

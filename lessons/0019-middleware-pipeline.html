@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 19 课：Middleware Pipeline</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速学 · 第 19 课 · <a href="../index.html">目录</a> · <a href="../reference/middleware-pipeline.html">中间件速查</a></header>
+<h1>Middleware Pipeline：请求经过哪些门</h1>
+<p class="lede">目标：知道全局中间件写在哪里、单路由中间件写在哪里，以及为什么顺序是 LIFO。</p>
+
+<h2>1. 全局中间件来自配置</h2>
+<pre><code>server:
+  middlewares:
+    compression:
+      enable: true
+    cors:
+      enable: true
+    timeout_request:
+      enable: true
+      timeout: 10s</code></pre>
+<p>配置驱动的中间件会作用于所有路由。查看当前解析结果：</p>
+<pre><code>cargo loco middleware --config</code></pre>
+<p>不要只写一个 key 就以为启用成功；某些默认启用的中间件一旦写进配置，必须显式写 <code>enable: true</code>。</p>
+
+<h2>2. 单个 controller 使用 Routes::layer</h2>
+<pre><code>pub fn routes() -&gt; Routes {
+    Routes::new()
+        .prefix("/api/admin")
+        .layer(my_tower_layer)
+        .add("/ping", get(ping))
+}</code></pre>
+<p>只想影响一个 controller 或一组路由时，用 <code>Routes::layer</code>；不要把局部限流或特殊 header 配成全局行为。</p>
+
+<h2>3. LIFO：最后添加，最先进入</h2>
+<pre><code>Vec&lt;Layer&gt;: [A, B, C]
+
+请求进入：C → B → A → handler
+响应返回：handler → A → B → C</code></pre>
+<p>这和直觉中的“从左到右”相反。把自定义 layer 放到 vec 的末尾，意味着它更靠近外部请求；放到前面，意味着它更靠近 handler。</p>
+
+<h2>4. 快速练习</h2>
+<div class="task"><ol>
+<li>运行 <code>cargo loco middleware --config</code>，记录 logger、request_id、etag 的状态。</li>
+<li>解释为什么 CORS 通常是全局 middleware，而管理员专用限流可以是路由级 layer。</li>
+<li>画出三个 layer 的请求进入顺序和响应返回顺序。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">Loco 中哪个 middleware 最先看到入站请求？</p>
+<button data-ok="1">最后添加的 layer</button><button data-ok="0">最先添加的 layer</button><button data-ok="0">handler 自己看到</button><p class="fb" aria-live="polite"></p></div>
+<div class="quiz" id="q2"><p class="q">只给 admin 路由加限流，应该优先放哪里？</p>
+<button data-ok="1">Routes::layer 局部层</button><button data-ok="0">全局配置层</button><button data-ok="0">Model 查询层</button><p class="fb" aria-live="polite"></p></div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) { var fb=quiz.querySelector('.fb'); quiz.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right','wrong'); }); var ok=b.dataset.ok==='1'; b.classList.add(ok?'right':'wrong'); fb.textContent=ok?'答对。中间件栈是 LIFO。':'再想一次：最后添加的 layer 最先遇到入站请求。'; }); }); });
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/add-middleware/">Loco 官方：Add middleware</a>。重点看配置启用、<code>Routes::layer</code> 和验证命令。</p>
+<p>完成后告诉我：你会把哪个行为做成全局 middleware，哪个行为做成局部 layer。</p>
+<nav class="next"><a href="0018-fat-model-slim-controller.html">← 第 18 课：Model/Controller 边界</a><a href="../reference/middleware-pipeline.html">打开中间件速查 →</a></nav>
+</body></html>

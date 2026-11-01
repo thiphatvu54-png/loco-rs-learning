@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 16 课：API Key 认证</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速学 · 第 16 课 · <a href="../index.html">目录</a> · <a href="../reference/api-key-auth.html">API Key 速查</a></header>
+<h1>API Key 认证：给机器客户端一把长期钥匙</h1>
+<p class="lede">目标：知道什么时候用 JWT，什么时候用 API Key，并看懂现有 users 表里的 <code>api_key</code>。</p>
+
+<h2>1. JWT 和 API Key 的边界</h2>
+<table><tr><th>方式</th><th>适合</th><th>特点</th></tr>
+<tr><td>JWT</td><td>浏览器用户登录</td><td>有 exp，可过期；签名验证</td></tr>
+<tr><td>API Key</td><td>CLI、脚本、机器对机器</td><td>长期凭据；数据库查 key</td></tr></table>
+<p>当前项目的 users 表已经有唯一的 <code>api_key</code>，模型也实现了 <code>Authenticable::find_by_api_key</code>。</p>
+
+<h2>2. 在 handler 中使用 ApiToken</h2>
+<pre><code>use crate::models::users;
+
+async fn current_by_api_key(
+    auth: auth::ApiToken&lt;users::Model&gt;,
+) -&gt; Result&lt;Response&gt; {
+    tracing::info!(user_pid = %auth.user.pid, "api key request");
+    format::json(serde_json::json!({
+        "pid": auth.user.pid,
+        "email": auth.user.email,
+    }))
+}</code></pre>
+<p><code>ApiToken</code> 会从 <code>Authorization: Bearer &lt;API_KEY&gt;</code> 读取 key，再调用 <code>find_by_api_key</code> 查询用户。它不使用 <code>auth.jwt.secret</code>、<code>expiration</code> 或 <code>location</code> 配置。</p>
+
+<h2>3. API Key 的风险</h2>
+<ul><li>它通常长期有效，泄露后的影响比短期 JWT 更大。</li><li>只在 HTTPS 下传输，不能写进日志或提交到仓库。</li><li>生产系统应提供撤销/轮换策略，数据库只存可安全管理的 key。</li></ul>
+
+<h2>4. 快速练习</h2>
+<div class="task"><ol>
+<li>在一个只给机器调用的 handler 中使用 <code>auth::ApiToken&lt;users::Model&gt;</code>。</li>
+<li>用 <code>Authorization: Bearer &lt;API_KEY&gt;</code> 发送请求。</li>
+<li>解释为什么 <code>auth.jwt.location</code> 不会改变 ApiToken 的读取位置。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">API Key 最适合哪类客户端？</p>
+<button data-ok="1">CLI 或机器客户端</button><button data-ok="0">短期网页登录</button><button data-ok="0">数据库迁移脚本</button><p class="fb" aria-live="polite"></p></div>
+<div class="quiz" id="q2"><p class="q">ApiToken 默认从哪里读取 key？</p>
+<button data-ok="1">Bearer 请求头</button><button data-ok="0">JWT 查询参数</button><button data-ok="0">Cookie 配置项</button><p class="fb" aria-live="polite"></p></div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) { var fb=quiz.querySelector('.fb'); quiz.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right','wrong'); }); var ok=b.dataset.ok==='1'; b.classList.add(ok?'right':'wrong'); fb.textContent=ok?'答对。API Key 是长期机器凭据。':'再想一次：ApiToken 固定读取 Bearer header。'; }); }); });
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/api-key-auth/">Loco 官方：Protect a Route with an API Key</a>。重点看 <code>ApiToken&lt;T&gt;</code> 和 <code>find_by_api_key</code>。</p>
+<p>完成后告诉我：你的机器客户端为什么不用 JWT。</p>
+<nav class="next"><a href="0015-resource-authorization.html">← 第 15 课：资源级授权</a><a href="../reference/api-key-auth.html">打开 API Key 速查 →</a></nav>
+</body></html>

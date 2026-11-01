@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>中间件 Pipeline 速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0019-middleware-pipeline.html">第 19 课</a></header>
+<h1>中间件 Pipeline 速查</h1>
+<pre><code>配置全局：server.middlewares.*
+局部路由：Routes::layer(...)
+验证配置：cargo loco middleware --config</code></pre>
+<table><tr><th>方向</th><th>顺序</th></tr><tr><td>请求进入</td><td>最后添加 → 最先添加 → handler</td></tr><tr><td>响应返回</td><td>handler → 最先添加 → 最后添加</td></tr></table>
+<p>默认启用的 middleware 如果显式写入配置，通常要同时写 <code>enable: true</code>。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/add-middleware/">官方 Add middleware</a> · <a href="https://loco.rs/docs/reference/middleware/">官方 Middleware catalog</a></p></body></html>

@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>分页与过滤速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0017-pagination-filtering.html">第 17 课</a></header>
+<h1>分页与过滤速查</h1>
+<pre><code>Query(pagination): Query&lt;query::PaginationQuery&gt;
+Query(filter): Query&lt;ListFilter&gt;
+query::paginate(&amp;ctx.db, Entity::search(filter.q.as_deref()), None, &amp;pagination)</code></pre>
+<table><tr><th>字段</th><th>默认/含义</th></tr><tr><td>page</td><td>1-based，默认 1</td></tr><tr><td>page_size</td><td>默认 25</td></tr><tr><td>total_pages</td><td>过滤后总页数</td></tr><tr><td>total_items</td><td>过滤后总条数</td></tr></table>
+<p class="source"><a href="https://loco.rs/docs/how-to/paginate/">官方 Paginate query results</a> · <a href="https://loco.rs/docs/reference/query-pagination/">官方 Query DSL &amp; pagination</a></p></body></html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 17 课：分页与过滤</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速学 · 第 17 课 · <a href="../index.html">目录</a> · <a href="../reference/pagination-filtering.html">分页速查</a></header>
+<h1>分页与过滤：列表接口不要一次返回整张表</h1>
+<p class="lede">目标：读懂现有 categories 列表的 <code>page</code>、<code>page_size</code>、<code>q</code> 和统一分页响应。</p>
+
+<h2>1. 现有 handler 的四层</h2>
+<pre><code>Query(pagination): Query&lt;query::PaginationQuery&gt;
+Query(filter): Query&lt;ListFilter&gt;
+Entity::search(filter.q.as_deref())
+query::paginate(..., &amp;pagination)</code></pre>
+<table><tr><th>部分</th><th>职责</th></tr>
+<tr><td><code>PaginationQuery</code></td><td>解析 page/page_size，默认 1/25</td></tr>
+<tr><td><code>ListFilter</code></td><td>解析业务过滤条件，如 q</td></tr>
+<tr><td><code>Entity::search</code></td><td>把过滤条件变成查询</td></tr>
+<tr><td><code>Page::from_query</code></td><td>输出 items 和分页元数据</td></tr></table>
+
+<h2>2. 请求和响应</h2>
+<pre><code>GET /api/categories?q=book&amp;page=2&amp;page_size=10</code></pre>
+<pre><code>{
+  "items": [],
+  "page": 2,
+  "page_size": 10,
+  "total_pages": 3,
+  "total_items": 27
+}</code></pre>
+<p><code>page</code> 对客户端是从 1 开始的；Loco 内部会转换成数据库分页需要的 0-based 页码。不要手写另一套字段名，统一使用 <code>page</code>、<code>page_size</code>、<code>total_pages</code>、<code>total_items</code>。</p>
+
+<h2>3. 快速练习</h2>
+<div class="task"><ol>
+<li>请求 <code>/api/categories?page_size=2</code>，观察响应中的四个分页字段。</li>
+<li>请求 <code>/api/categories?q=book</code>，说明过滤发生在分页之前。</li>
+<li>为列表请求测试增加一个断言：<code>body["page_size"] == 2</code>。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">Loco 的默认 page_size 是多少？</p>
+<button data-ok="1">25 条记录</button><button data-ok="0">10 条记录</button><button data-ok="0">100 条记录</button><p class="fb" aria-live="polite"></p></div>
+<div class="quiz" id="q2"><p class="q">为什么先过滤再分页？</p>
+<button data-ok="1">页数对应筛选结果</button><button data-ok="0">减少 JSON 字段</button><button data-ok="0">避免 JWT 验证</button><p class="fb" aria-live="polite"></p></div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) { var fb=quiz.querySelector('.fb'); quiz.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right','wrong'); }); var ok=b.dataset.ok==='1'; b.classList.add(ok?'right':'wrong'); fb.textContent=ok?'答对。分页元数据必须反映过滤后的集合。':'再想一次：默认 page_size 是 25，过滤条件要参与分页查询。'; }); }); });
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/paginate/">Loco 官方：Paginate query results</a>。重点看 <code>PaginationQuery</code> 默认值和分页响应元数据。</p>
+<p>完成后告诉我：一个列表接口至少应该返回哪些分页字段。</p>
+<nav class="next"><a href="0016-api-key-auth.html">← 第 16 课：API Key</a><a href="../reference/pagination-filtering.html">打开分页速查 →</a></nav>
+</body></html>

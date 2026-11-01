@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Model/Controller 边界速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0018-fat-model-slim-controller.html">第 18 课</a></header>
+<h1>Model/Controller 边界速查</h1>
+<table><tr><th>Controller</th><th>Model/Entity</th></tr><tr><td>提取 Path/Query/Json</td><td>finder 和查询规则</td></tr><tr><td>鉴权与响应状态</td><td>唯一性和状态转移</td></tr><tr><td>调用一两个领域方法</td><td>可被 HTTP/Task/Worker 复用</td></tr></table>
+<pre><code>let res = query::paginate(
+    &amp;ctx.db,
+    Entity::search(q),
+    None,
+    &amp;pagination,
+).await?;</code></pre>
+<p>不要手改 <code>src/models/_entities</code>；自定义逻辑写在 <code>src/models/&lt;name&gt;.rs</code>。</p>
+</body></html>

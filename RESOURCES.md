@@ -23,6 +23,10 @@
 
 ## Wisdom (Communities)
 
+- [Paginate query results](https://loco.rs/docs/how-to/paginate/) — `PaginationQuery`、过滤和分页元数据。
+
+- [Protect a Route with an API Key](https://loco.rs/docs/how-to/api-key-auth/) — `ApiToken<T>`、`find_by_api_key` 和 Bearer API key。
+
 - [Protect a Route with JWT](https://loco.rs/docs/how-to/jwt-auth/) — `JWTWithUser` 加载用户并保护业务路由。
 
 - [Protect a Route with JWT](https://loco.rs/docs/how-to/jwt-auth/) — `JWT`、`JWTWithUser` 和受保护路由。

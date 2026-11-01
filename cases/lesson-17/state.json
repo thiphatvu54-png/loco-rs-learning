@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-17-pagination-filtering",
+  "lesson": 17,
+  "topic": "Pagination and filtering",
+  "status": "lesson-created",
+  "next_steps": [
+    "request a paginated categories list",
+    "combine q with page and page_size",
+    "assert pagination metadata in a request test"
+  ]
+}

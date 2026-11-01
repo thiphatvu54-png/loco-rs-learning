@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>API Key 认证速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0016-api-key-auth.html">第 16 课</a></header>
+<h1>API Key 认证速查</h1>
+<pre><code>async fn handler(
+    auth: auth::ApiToken&lt;users::Model&gt;,
+) -&gt; Result&lt;Response&gt; {
+    format::json(&amp;auth.user)
+}</code></pre>
+<pre><code>Authorization: Bearer &lt;API_KEY&gt;</code></pre>
+<ul><li>ApiToken 会查 <code>find_by_api_key</code>。</li><li>不读取 JWT secret、expiration 或 jwt.location。</li><li>适合 CLI 和机器对机器调用。</li><li>泄露后需要撤销或轮换。</li></ul>
+<p class="source"><a href="https://loco.rs/docs/how-to/api-key-auth/">官方 Protect a Route with an API Key</a></p></body></html>

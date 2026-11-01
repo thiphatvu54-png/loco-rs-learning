@@ -1,0 +1,12 @@
+{
+  "slug": "lesson-16-api-key-auth",
+  "lesson": 16,
+  "topic": "API key authentication",
+  "status": "lesson-created",
+  "next_steps": [
+    "compare JWT and API key clients",
+    "use auth::ApiToken<users::Model>",
+    "send a Bearer API key",
+    "explain rotation and revocation"
+  ]
+}

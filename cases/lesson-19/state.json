@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-19-middleware-pipeline",
+  "lesson": 19,
+  "topic": "Middleware pipeline",
+  "status": "lesson-created",
+  "next_steps": [
+    "run cargo loco middleware --config",
+    "compare global and route-scoped middleware",
+    "draw request and response order"
+  ]
+}
