@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>自定义 MiddlewareLayer 速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0024-custom-middleware-layer.html">第 24 课</a></header>
+<h1>自定义 MiddlewareLayer</h1>
+<pre><code>impl MiddlewareLayer for AdminHeader {
+    fn name(&amp;self) -&gt; &'static str { "admin_header" }
+    fn is_enabled(&amp;self) -&gt; bool { self.enable }
+    fn config(&amp;self) -&gt; serde_json::Result&lt;Value&gt; { serde_json::to_value(self) }
+    fn apply(&amp;self, app: AXRouter&lt;AppContext&gt;) -&gt; Result&lt;AXRouter&lt;AppContext&gt;&gt; {
+        Ok(app.layer(axum::middleware::map_response(add_header)))
+    }
+}</code></pre>
+<p>注册：<code>default_middleware_stack(ctx)</code> → <code>push(Box::new(AdminHeader { enable: true }))</code> → <code>Hooks::middlewares</code> 返回。</p>
+<p><strong>选择：</strong><code>map_response</code> 适合只处理响应；需要检查请求并决定是否继续时，使用 <code>from_fn</code>。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/add-middleware/">官方自定义 middleware</a></p>
+</body></html>

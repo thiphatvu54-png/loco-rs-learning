@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>自定义 middleware 配置速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0025-custom-middleware-config.html">第 25 课</a></header>
+<h1>自定义 middleware 配置</h1>
+<pre><code>settings:
+  admin_header:
+    enable: true
+    value: "admin-api"
+
+let settings: AppSettings = ctx.config.settings()?;</code></pre>
+<table><tr><th>配置区域</th><th>用途</th></tr><tr><td><code>server.middlewares</code></td><td>Loco 内建 middleware 的固定结构</td></tr><tr><td><code>settings</code></td><td>应用自己的自由配置</td></tr></table>
+<p><code>Hooks::middlewares</code> 没有返回 <code>Result</code>；要优雅处理坏配置，在 <code>after_context</code> 或 <code>load_config</code> 提前验证。</p>
+<p class="source"><a href="https://loco.rs/docs/reference/configuration/">官方 Configuration</a> · <a href="https://loco.rs/docs/how-to/add-middleware/">官方 Add middleware</a></p>
+</body></html>

@@ -1,11 +1,10 @@
-{
-  "slug": "lesson-23-loco-middleware-stack",
-  "lesson": 23,
-  "topic": "Loco MiddlewareLayer and Hooks middleware stack",
-  "status": "lesson-created",
-  "next_steps": [
-    "replace powered_by in Hooks::middlewares",
-    "implement one custom MiddlewareLayer",
-    "verify stack changes with a response header"
-  ]
+﻿{
+    "slug":  "lesson-23-loco-middleware-stack",
+    "lesson":  23,
+    "topic":  "Loco MiddlewareLayer and Hooks middleware stack",
+    "status":  "follow-up-completed",
+    "next_steps":  [
+                       "implement one custom MiddlewareLayer",
+                       "verify stack changes with a response header"
+                   ]
 }

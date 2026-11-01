@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 24 课：实现自定义 MiddlewareLayer</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 24 课 · <a href="../index.html">目录</a> · <a href="../reference/custom-middleware-layer.html">速查</a></header>
+<h1>从零实现自定义 MiddlewareLayer</h1>
+<p class="lede">这一课真正写一个 Loco middleware：它给所有响应加 <code>X-Admin-API: loco</code>，再把它注册进全局栈。</p>
+
+<h2>1. 四个方法对应四个问题</h2>
+<pre><code>name()      // 栈里用什么名字找到它？
+is_enabled  // 当前是否参与构建？
+config()    // cargo loco middleware --config 显示什么？
+apply()     // 如何把它套到 Axum Router？</code></pre>
+<p>Loco 1.2 的 <code>MiddlewareLayer</code> 接收的是带 <code>AppContext</code> 状态的 Axum Router。它比 <code>Routes::layer</code> 更靠外层，作用范围是整个应用。</p>
+
+<h2>2. 写一个响应头 middleware</h2>
+<pre><code>use axum::{
+    http::HeaderValue,
+    response::Response,
+    Router as AXRouter,
+};
+use loco_rs::{
+    app::AppContext,
+    controller::middleware::MiddlewareLayer,
+    Result,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AdminHeader {
+    #[serde(default)]
+    pub enable: bool,
+}
+
+impl MiddlewareLayer for AdminHeader {
+    fn name(&amp;self) -&gt; &'static str {
+        "admin_header"
+    }
+
+    fn is_enabled(&amp;self) -&gt; bool {
+        self.enable
+    }
+
+    fn config(&amp;self) -&gt; serde_json::Result&lt;serde_json::Value&gt; {
+        serde_json::to_value(self)
+    }
+
+    fn apply(&amp;self, app: AXRouter&lt;AppContext&gt;) -&gt; Result&lt;AXRouter&lt;AppContext&gt;&gt; {
+        Ok(app.layer(axum::middleware::map_response(add_header)))
+    }
+}
+
+async fn add_header(mut response: Response) -&gt; Response {
+    response.headers_mut().insert(
+        "X-Admin-API",
+        HeaderValue::from_static("loco"),
+    );
+    response
+}</code></pre>
+<p><code>map_response</code> 只改响应，不需要手动调用 <code>next.run(req)</code>。这适合响应头、响应包装和统一输出处理。</p>
+
+<h2>3. 注册到 App 的默认栈</h2>
+<pre><code>use loco_rs::controller::middleware::{
+    self, MiddlewareLayer,
+};
+
+fn middlewares(ctx: &amp;AppContext) -&gt; Vec&lt;Box&lt;dyn MiddlewareLayer&gt;&gt; {
+    let mut stack = middleware::default_middleware_stack(ctx);
+    stack.push(Box::new(AdminHeader { enable: true }));
+    stack
+}</code></pre>
+<p>把这个方法放入 <code>impl Hooks for App</code>。因为它被 push 到 Vec 末尾，所以它最先看到入站请求，响应头也会在最外层写回。</p>
+
+<h2>4. 验证闭环</h2>
+<pre><code>cargo loco middleware --config
+curl.exe -i http://127.0.0.1:5150/api/categories</code></pre>
+<p>检查 middleware 列表和响应头。若看不到 <code>X-Admin-API</code>，按顺序查：有没有覆盖正确的 <code>Hooks::middlewares</code>、<code>is_enabled()</code> 是否为 true、<code>apply()</code> 是否返回了新 Router。</p>
+
+<div class="quiz" id="q1"><p class="q">只改响应头，最合适的 Axum layer 是什么？</p>
+  <button data-ok="0">Routes::new</button><button data-ok="1">middleware::map_response</button><button data-ok="0">JWTWithUser</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">自定义 middleware 放在 Vec 末尾，入站请求何时看到它？</p>
+  <button data-ok="1">最先</button><button data-ok="0">最后</button><button data-ok="0">只在 handler 后</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：响应变换用 map_response，栈顺序仍然是 LIFO。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/add-middleware/">Loco 官方：Add middleware · Write a custom middleware</a> · <a href="https://loco.rs/docs/reference/middleware/">Middleware catalog</a></p>
+<p>下一步可以挑战：把 <code>AdminHeader</code> 的开关从配置文件读取，并让测试环境与生产环境使用不同的栈。</p>
+<nav class="next"><a href="0023-loco-middleware-stack.html">← 第 23 课：MiddlewareLayer 栈</a><a href="../reference/custom-middleware-layer.html">打开速查 →</a></nav>
+</body>
+</html>

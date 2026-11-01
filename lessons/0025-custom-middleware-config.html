@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 25 课：给自定义 middleware 接入配置</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 25 课 · <a href="../index.html">目录</a> · <a href="../reference/custom-middleware-config.html">速查</a></header>
+<h1>自定义 middleware 的配置边界</h1>
+<p class="lede">难点在这里：自定义 middleware 不是直接往 <code>server.middlewares</code> 里塞 YAML key，而是使用 Loco 的自由配置 <code>settings:</code>，再在 <code>Hooks::middlewares</code> 中构建它。</p>
+
+<h2>1. 配置放在 settings</h2>
+<pre><code># config/development.yaml
+settings:
+  admin_header:
+    enable: true
+    value: "admin-api-dev"
+
+# config/production.yaml
+settings:
+  admin_header:
+    enable: true
+    value: "admin-api"</code></pre>
+<p><code>server.middlewares</code> 是 Loco 已知内建 middleware 的强类型配置；应用自己的配置放到 <code>settings</code>，再用 <code>ctx.config.settings::&lt;T&gt;()</code> 解析。这样配置错误不会被静默吞掉。</p>
+
+<h2>2. 定义应用设置和 middleware</h2>
+<pre><code>#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct AppSettings {
+    admin_header: AdminHeaderSettings,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+struct AdminHeaderSettings {
+    enable: bool,
+    value: String,
+}
+
+impl Default for AdminHeaderSettings {
+    fn default() -&gt; Self {
+        Self { enable: false, value: "admin-api".into() }
+    }
+}
+
+// MiddlewareLayer 的 AdminHeader 见上一课；这里把配置值传进去
+fn middlewares(ctx: &amp;AppContext) -&gt; Vec&lt;Box&lt;dyn MiddlewareLayer&gt;&gt; {
+    let settings: AppSettings = ctx
+        .config
+        .settings()
+        .expect("invalid settings.admin_header");
+
+    let mut stack = middleware::default_middleware_stack(ctx);
+    stack.push(Box::new(AdminHeader {
+        enable: settings.admin_header.enable,
+        value: settings.admin_header.value,
+    }));
+    stack
+}</code></pre>
+
+<h2>3. 为什么不能直接写 server.middlewares.admin_header？</h2>
+<p>因为 <code>server.middlewares</code> 反序列化到 Loco 的固定 <code>Server</code> 配置结构；未知字段不会自动变成你的 Rust 类型。<code>settings</code> 是 Loco 明确提供的自由扩展槽，支持环境文件的深度合并。</p>
+
+<h2>4. 配置错误应该在哪里暴露？</h2>
+<table><tr><th>位置</th><th>特点</th></tr>
+  <tr><td><code>Hooks::middlewares</code> 里 <code>expect</code></td><td>简单直接；配置错误在构建 middleware 时 panic</td></tr>
+  <tr><td><code>Hooks::after_context</code> 或 <code>load_config</code></td><td>可以返回 <code>Result</code>，更适合生产启动失败</td></tr>
+</table>
+<p>这是 API 边界：<code>middlewares</code> 本身返回 Vec，没有 <code>Result</code>；如果想优雅报告坏配置，就在更早的有错误返回值的 Hook 验证。</p>
+
+<h2>5. 验证三件事</h2>
+<pre><code>cargo loco middleware --config
+curl.exe -i http://127.0.0.1:5150/api/categories
+# 观察 X-Admin-API 的值是否随环境文件改变</code></pre>
+
+<div class="quiz" id="q1"><p class="q">应用自定义配置最合适的 YAML 区域是什么？</p>
+  <button data-ok="0">server.middlewares 任意 key</button><button data-ok="1">settings</button><button data-ok="0">routes</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">为什么不能在 Hooks::middlewares 里直接使用 ?？</p>
+  <button data-ok="0">Rust 不允许配置错误</button><button data-ok="1">该 Hook 返回 Vec，不是 Result</button><button data-ok="0">MiddlewareLayer 不支持配置</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：Loco 为应用自定义配置提供了 settings。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/reference/configuration/">Loco 官方：Configuration</a> · <a href="https://loco.rs/docs/how-to/add-middleware/">Loco 官方：Add middleware</a> · <a href="https://loco.rs/docs/reference/hooks/">Hooks trait</a></p>
+<p>下一步可以挑战：在 <code>after_context</code> 中预解析设置，并把验证后的配置放入 <code>shared_store</code>，让 middleware 构建阶段不再 panic。</p>
+<nav class="next"><a href="0024-custom-middleware-layer.html">← 第 24 课：自定义 MiddlewareLayer</a><a href="../reference/custom-middleware-config.html">打开速查 →</a></nav>
+</body>
+</html>

@@ -1,5 +1,9 @@
 # Notes
 
+- 第 25 课已创建：用 Loco 的 `settings:` 和 `Config::settings::<T>()` 给自定义 middleware 提供环境配置，并解释 `Hooks::middlewares` 的错误边界。
+
+- 第 24 课已创建：从零实现带响应头的自定义 `MiddlewareLayer`，并注册到 `Hooks::middlewares` 全局栈。
+
 - 第 23 课已创建：进入 Loco 独有的 `MiddlewareLayer`、`Hooks::middlewares` 和 `MiddlewareStackExt`，学习改默认全局 middleware 栈。
 
 - 第 22 课已创建：区分 JWT 认证失败的 401 与业务授权失败的 403，并用 `Error::CustomError` 构造 403。

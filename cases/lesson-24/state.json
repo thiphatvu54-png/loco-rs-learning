@@ -1,0 +1,10 @@
+{
+  "slug": "lesson-24-custom-middleware-layer",
+  "lesson": 24,
+  "topic": "Implement a custom Loco MiddlewareLayer",
+  "status": "follow-up-completed",
+  "next_steps": [
+    "wire its enable flag to environment config",
+    "assert the custom response header in a request test"
+  ]
+}

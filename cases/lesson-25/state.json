@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-25-custom-middleware-config",
+  "lesson": 25,
+  "topic": "Configuring a custom Loco middleware",
+  "status": "lesson-created",
+  "next_steps": [
+    "validate settings in after_context",
+    "store parsed settings in shared_store",
+    "test development and production middleware values"
+  ]
+}
