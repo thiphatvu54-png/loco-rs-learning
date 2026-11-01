@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-21-jwt-request-test",
+  "lesson": 21,
+  "topic": "JWT protected route request tests",
+  "status": "lesson-created",
+  "next_steps": [
+    "test expired or malformed JWT",
+    "test an authenticated but unauthorized request as 403",
+    "keep Arrange Act Assert visible in request tests"
+  ]
+}

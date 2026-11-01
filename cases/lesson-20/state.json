@@ -1,0 +1,10 @@
+﻿{
+    "slug":  "lesson-20-route-layer-auth-boundary",
+    "lesson":  20,
+    "topic":  "Routes::layer and JWT extractor boundary",
+    "status":  "follow-up-completed",
+    "next_steps":  [
+                       "add a request test for missing JWT",
+                       "add a route-scoped timeout layer"
+                   ]
+}

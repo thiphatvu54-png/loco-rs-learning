@@ -1,11 +1,10 @@
-{
-  "slug": "lesson-19-middleware-pipeline",
-  "lesson": 19,
-  "topic": "Middleware pipeline",
-  "status": "lesson-created",
-  "next_steps": [
-    "run cargo loco middleware --config",
-    "compare global and route-scoped middleware",
-    "draw request and response order"
-  ]
+﻿{
+    "slug":  "lesson-19-middleware-pipeline",
+    "lesson":  19,
+    "topic":  "Middleware pipeline",
+    "status":  "follow-up-completed",
+    "next_steps":  [
+                       "practice Routes::layer with a timeout or tracing layer",
+                       "compare JWT and JWTWithUser in a protected handler"
+                   ]
 }

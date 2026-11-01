@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Routes::layer 与 JWT extractor 速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0020-route-layer-auth-boundary.html">第 20 课</a></header>
+<h1>Routes::layer 与 JWT extractor</h1>
+<pre><code>Routes::layer(...)       // 路由组级：日志、超时、限流、响应头
+auth::JWT                // handler 级：验证 token，拿 claims
+auth::JWTWithUser&lt;User&gt;   // handler 级：验证 token + 查用户</code></pre>
+<table><tr><th>问题</th><th>选择</th></tr><tr><td>所有 admin 路由都要超时</td><td><code>.add(...).layer(timeout)</code></td></tr><tr><td>当前用户能否操作资源</td><td><code>JWTWithUser</code> + 业务授权规则</td></tr><tr><td>所有应用路由启用 CORS</td><td><code>server.middlewares</code></td></tr></table>
+<p><strong>顺序：</strong>先 <code>add</code> 路由，再调用 <code>layer</code>。自定义 layer 中，<code>next.run(req).await</code> 之前是进入 handler 前，之后是响应返回后。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/add-middleware/">官方 Add middleware</a> · <a href="https://loco.rs/docs/how-to/jwt-auth/">官方 JWT auth</a></p>
+</body></html>

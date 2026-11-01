@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JWT 请求测试速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0021-jwt-request-test.html">第 21 课</a></header>
+<h1>JWT 请求测试</h1>
+<pre><code>request::&lt;App, _, _&gt;(|request, ctx| async move {
+    let response = request.get("/api/categories").await;
+    assert_eq!(response.status_code(), 401);
+}).await;</code></pre>
+<table><tr><th>路径</th><th>断言</th></tr><tr><td>无 token</td><td>401，handler 不执行</td></tr><tr><td>有效 token</td><td>200/201/204，进入业务 handler</td></tr><tr><td>已认证但无权限</td><td>403，业务授权拒绝</td></tr></table>
+<p><strong>结构：</strong>Arrange 准备用户/token → Act 发请求 → Assert 状态码和 JSON。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/request-tests/">官方 request tests</a> · <a href="https://loco.rs/docs/how-to/jwt-auth/">官方 JWT auth</a></p>
+</body></html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 20 课：Routes::layer 与 JWT extractor</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 20 课 · <a href="../index.html">目录</a> · <a href="../reference/route-layer-auth.html">速查</a></header>
+<h1>Routes::layer 与 JWT extractor：边界放对位置</h1>
+<p class="lede">目标：看到一组路由时，能判断逻辑应该放在局部 layer，还是放进 handler 参数里的认证 extractor。</p>
+
+<h2>1. 先记住两种职责</h2>
+<table>
+  <tr><th>机制</th><th>适合放什么</th><th>范围</th></tr>
+  <tr><td><code>Routes::layer</code></td><td>日志、超时、限流、统一响应头</td><td>这个 <code>Routes</code> 已注册的所有 handler</td></tr>
+  <tr><td><code>auth::JWT</code></td><td>验证 token，拿到 claims</td><td>声明了 extractor 的那个 handler</td></tr>
+  <tr><td><code>auth::JWTWithUser&lt;T&gt;</code></td><td>验证 token，并从数据库加载用户</td><td>声明了 extractor 的那个 handler</td></tr>
+</table>
+<p>Loco 官方把 <code>Routes::layer</code> 定义为路由组级别的 Tower layer；JWT 则是 Axum extractor，在 handler 执行前完成认证。详见 <a href="https://loco.rs/docs/how-to/add-middleware/">Add middleware</a> 与 <a href="https://loco.rs/docs/how-to/jwt-auth/">Protect a Route with JWT</a>。</p>
+
+<h2>2. 一个 admin 路由组</h2>
+<pre><code>use axum::{extract::Request, middleware};
+use loco_rs::prelude::*;
+use std::time::Instant;
+
+async fn admin_trace(req: Request, next: middleware::Next) -&gt; Response {
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    let started = Instant::now();
+
+    let response = next.run(req).await;
+
+    tracing::info!(
+        %method,
+        %uri,
+        status = response.status().as_u16(),
+        elapsed_ms = started.elapsed().as_millis(),
+        "admin request finished"
+    );
+    response
+}
+
+pub fn routes() -&gt; Routes {
+    Routes::new()
+        .prefix("api/admin/")
+        .add("ping", get(ping))
+        .add("products", get(products))
+        // 放在 add 之后，套住已经注册的路由
+        .layer(middleware::from_fn(admin_trace))
+}</code></pre>
+
+<h2>3. 认证仍然写在 handler 参数里</h2>
+<pre><code>async fn products(
+    auth: auth::JWTWithUser&lt;users::Model&gt;,
+    State(ctx): State&lt;AppContext&gt;,
+) -&gt; Result&lt;Response&gt; {
+    tracing::info!(user_pid = %auth.user.pid, "list products");
+    format::json(products::Entity::find().all(&amp;ctx.db).await?)
+}</code></pre>
+<p>一次请求的简化顺序是：<code>admin_trace</code> 进入 → JWTWithUser 验证并查用户 → <code>products</code> handler → layer 记录响应。layer 不应该偷偷替代用户 extractor 做业务授权。</p>
+
+<h2>4. 这一课的判断题</h2>
+<div class="task"><ol>
+  <li>只给 admin 路由加 5 秒超时：放在 <code>Routes::layer</code>。</li>
+  <li>判断当前用户能不能删除某个 category：在 handler 中使用 <code>JWTWithUser</code>，再调用模型的授权规则。</li>
+  <li>所有路由都要 CORS：放全局 <code>server.middlewares</code> 配置。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">哪一个会查询数据库加载当前用户？</p>
+  <button data-ok="0">auth::JWT</button><button data-ok="1">auth::JWTWithUser&lt;User&gt;</button><button data-ok="0">Routes::layer</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">Routes::layer 应该放在已有 add 之前还是之后？</p>
+  <button data-ok="0">之前</button><button data-ok="1">之后</button><button data-ok="0">两处都必须放</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：看它负责的是路由基础设施，还是用户身份。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/add-middleware/">Loco 官方：Add middleware</a> · <a href="https://loco.rs/docs/how-to/jwt-auth/">Loco 官方：Protect a Route with JWT</a></p>
+<p>完成后可以继续问我：如何给同一组路由叠加两个 layer，或如何把“管理员角色”写成可测试的授权规则。</p>
+<nav class="next"><a href="0019-middleware-pipeline.html">← 第 19 课：Middleware Pipeline</a><a href="../reference/route-layer-auth.html">打开速查 →</a></nav>
+</body>
+</html>

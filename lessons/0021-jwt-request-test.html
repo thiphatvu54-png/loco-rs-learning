@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 21 课：JWT 路由请求测试</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 21 课 · <a href="../index.html">目录</a> · <a href="../reference/jwt-request-test.html">速查</a></header>
+<h1>JWT 路由请求测试：先证明 401，再证明 200</h1>
+<p class="lede">目标：用一个请求测试锁住认证边界，确保没有 token 进不了 handler，有效 token 才能进入业务代码。</p>
+
+<h2>1. 最小的匿名请求测试</h2>
+<pre><code>use admin_api::app::App;
+use loco_rs::testing::prelude::*;
+use serial_test::serial;
+
+#[tokio::test]
+#[serial]
+async fn list_without_token_is_401() {
+    request::&lt;App, _, _&gt;(|request, _ctx| async move {
+        let response = request.get("/api/categories").await;
+
+        assert_eq!(response.status_code(), 401);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["error"], "unauthorized");
+    })
+    .await;
+}</code></pre>
+<p>没有 token 时，<code>JWT</code> / <code>JWTWithUser</code> extractor 在 handler 之前拒绝请求，所以业务 handler 不会执行，预期是 <code>401</code>。</p>
+
+<h2>2. 再测一个成功分支</h2>
+<pre><code>#[tokio::test]
+#[serial]
+async fn list_with_token_is_200() {
+    request::&lt;App, _, _&gt;(|request, ctx| async move {
+        let user = prepare_data::init_user_login(&amp;request, &amp;ctx).await;
+        let (key, value) = prepare_data::auth_header(&amp;user.token);
+
+        let response = request
+            .get("/api/categories")
+            .add_header(key, value)
+            .await;
+
+        assert_eq!(response.status_code(), 200);
+    })
+    .await;
+}</code></pre>
+<p>这里的测试结构是 Arrange → Act → Assert：准备测试用户和 token，发 HTTP 请求，断言状态码和响应体。</p>
+
+<h2>3. 失败时先看哪一层</h2>
+<table><tr><th>结果</th><th>先检查</th></tr>
+  <tr><td>401</td><td>Authorization header、token 位置、JWT secret、用户是否存在</td></tr>
+  <tr><td>403</td><td>handler 内的角色/资源授权规则</td></tr>
+  <tr><td>500</td><td>数据库查询、配置或 handler 内部错误</td></tr>
+</table>
+
+<div class="quiz" id="q1"><p class="q">缺少 JWT 时，业务 handler 会执行吗？</p>
+  <button data-ok="0">会执行</button><button data-ok="1">不会执行</button><button data-ok="0">只执行一半</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">认证测试至少要覆盖哪两个结果？</p>
+  <button data-ok="1">401 和成功状态</button><button data-ok="0">只有 500</button><button data-ok="0">只有响应 JSON</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：测试要锁住拒绝路径和成功路径。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/request-tests/">Loco 官方：Write request tests</a> · <a href="https://loco.rs/docs/how-to/jwt-auth/">Loco 官方：Protect a Route with JWT</a></p>
+<p>完成后可以继续问我：如何测试过期 token、错误 token，以及管理员角色返回 403 的情况。</p>
+<nav class="next"><a href="0020-route-layer-auth-boundary.html">← 第 20 课：Routes::layer 与 JWT</a><a href="../reference/jwt-request-test.html">打开速查 →</a></nav>
+</body>
+</html>

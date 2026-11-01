@@ -46,3 +46,7 @@
 
 ## Gaps
 - 官方文档没有专门讲 DDD 分层的页面。DDD 部分只能从 Loco 的默认结构（controllers / models / dtos / workers）出发自己推，需要判断时去 Discussions 问。
+
+- [Add middleware](https://loco.rs/docs/how-to/add-middleware/) — `Routes::layer` 的路由组作用域。
+- [Protect a Route with JWT](https://loco.rs/docs/how-to/jwt-auth/) — `JWT` 与 `JWTWithUser` 的 handler 边界。
+- [Write request (controller) tests](https://loco.rs/docs/how-to/request-tests/) — `request::<App, _, _>`、TestServer 与状态断言。

@@ -1,5 +1,9 @@
 # Notes
 
+- 第 21 课已创建：用 `request::<App, _, _>` 测试 JWT 保护路由，先锁定无 token 的 401，再锁定有效 token 的成功分支。
+
+- 第 20 课已创建：区分 `Routes::layer` 的路由组基础设施职责，与 `JWT` / `JWTWithUser` extractor 的 handler 认证职责；强调 `.add(...).layer(...)` 顺序。
+
 - 第 19 课已创建：全局/局部中间件与 LIFO 执行顺序。
 
 - 第 18 课已创建：把可复用领域规则放进 Model/Entity，保持 Controller 薄。
