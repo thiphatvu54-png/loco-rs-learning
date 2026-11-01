@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 13 课：请求测试的数据边界</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 13 课 · <a href="../index.html">目录</a> · <a href="../reference/request-test-data.html">请求测试速查</a></header>
+
+<h1>请求测试的数据边界：API、测试数据库和 fixture</h1>
+<p class="lede">目标：看懂 <code>init_user_login</code> 为什么同时调用 HTTP 和测试数据库，并学会把 Arrange / Act / Assert 分开。</p>
+
+<h2>1. 当前 helper 做了什么</h2>
+<pre><code>pub async fn init_user_login(
+    request: &amp;TestServer,
+    ctx: &amp;AppContext,
+) -&gt; LoggedInUser {
+    request.post("/api/auth/register").json(&amp;payload).await;
+    let user = users::Model::find_by_email(&amp;ctx.db, USER_EMAIL).await.unwrap();
+    request.post("/api/auth/verify").json(&amp;verify_payload).await;
+    let response = request.post("/api/auth/login").json(&amp;login).await;
+    LoggedInUser { user, token }
+}</code></pre>
+<p>它不是生产逻辑，而是测试夹具。HTTP 请求验证“接口能工作”；直接查 <code>ctx.db</code> 是为了拿到 token、pid 或验证数据库状态。</p>
+
+<h2>2. 为什么查到的是“真的数据”</h2>
+<p><code>ctx.db</code> 指向当前测试环境的数据库。这个项目的 <code>test.yaml</code> 默认使用独立 SQLite，并开启 <code>dangerously_recreate</code> / <code>dangerously_truncate</code>，所以每轮测试都从干净状态开始。</p>
+<table>
+<tr><th>测试需要什么</th><th>合适来源</th></tr>
+<tr><td>验证接口返回</td><td><code>TestServer</code> 发 HTTP 请求</td></tr>
+<tr><td>拿 pid、verification token</td><td>测试数据库查询</td></tr>
+<tr><td>验证写入结果</td><td>测试数据库再次查询</td></tr>
+</table>
+<p>这不是连接生产数据库；测试进程按 <code>LOCO_ENV=test</code> 读取 test 配置。</p>
+
+<h2>3. Arrange / Act / Assert</h2>
+<pre><code>// Arrange：准备用户和 token
+let logged_in = prepare_data::init_user_login(&amp;request, &amp;ctx).await;
+let (key, value) = prepare_data::auth_header(&amp;logged_in.token);
+
+// Act：发出真实 HTTP 请求
+let response = request
+    .get("/api/auth/current")
+    .add_header(key, value)
+    .await;
+
+// Assert：只断言这个测试关心的结果
+assert_eq!(response.status_code(), 200);</code></pre>
+
+<div class="note"><strong>边界原则：</strong>测试 helper 可以直接查测试数据库；生产 controller 不应该为了拿用户而绕过自己的业务边界直接读测试 helper。</div>
+
+<h2>4. 快速练习</h2>
+<div class="task">
+<ol>
+<li>在 <code>tests/requests/admin.rs</code> 找一个测试，标出 Arrange、Act、Assert 三段。</li>
+<li>解释为什么 <code>init_user_login</code> 返回同时包含 <code>user</code> 和 <code>token</code>。</li>
+<li>写一个断言：登录用户的 <code>pid</code> 与 <code>/api/auth/current</code> 返回的 pid 相同。</li>
+</ol>
+</div>
+
+<div class="quiz" id="q1">
+<p class="q"><code>init_user_login</code> 直接查数据库，查的是哪一个数据库？</p>
+<button data-ok="1">test 配置的数据库</button>
+<button data-ok="0">production 配置的数据库</button>
+<button data-ok="0">用户电脑的数据库</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">为什么测试 helper 同时使用 HTTP 和数据库？</p>
+<button data-ok="1">验证接口并取状态</button>
+<button data-ok="0">绕过所有接口逻辑</button>
+<button data-ok="0">连接生产读取数据</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。HTTP 测行为，数据库查状态；两者都在 test 环境。' : '再想一次：helper 使用 test 配置的数据库，不是 production。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/request-tests/">Loco 官方：Write request tests</a>。重点看测试启动、请求客户端和测试数据库隔离。</p>
+<p>做完后告诉我：你选的一个测试里，哪几行是 Arrange、哪一行是 Act、哪几行是 Assert。</p>
+
+<nav class="next"><a href="0012-structured-logging.html">← 第 12 课：结构化日志</a><a href="../reference/request-test-data.html">打开请求测试速查 →</a></nav>
+</body>
+</html>

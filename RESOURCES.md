@@ -22,6 +22,21 @@
 - [Write request (controller) tests](https://loco.rs/docs/how-to/request-tests/) — 接口测试。
 
 ## Wisdom (Communities)
+
+- [Protect a Route with JWT](https://loco.rs/docs/how-to/jwt-auth/) — `JWTWithUser` 加载用户并保护业务路由。
+
+- [Protect a Route with JWT](https://loco.rs/docs/how-to/jwt-auth/) — `JWT`、`JWTWithUser` 和受保护路由。
+
+- [Write request tests](https://loco.rs/docs/how-to/request-tests/) — 测试启动、TestServer、请求断言和测试数据库。
+
+- [Configure logging](https://loco.rs/docs/how-to/configure-logging/) — 日志级别、格式和生产 JSON 输出。
+
+- [Configuration](https://loco.rs/docs/reference/configuration/) — 环境选择、`get_env`、配置覆盖和环境变量。
+
+- [Schedule recurring jobs](https://loco.rs/docs/how-to/schedule-jobs/) — Scheduler 配置、英文时间表达式、Cron、`--list` 与 `--name`。
+
+- [Add a background worker](https://loco.rs/docs/how-to/add-worker/) — 生成、注册和调用 `BackgroundWorker`，包含 job id 与 batch enqueue。
+- [The background-processing model](https://loco.rs/docs/explanation/background-processing-model/) — 解释 `BackgroundAsync` / `ForegroundBlocking` / `BackgroundQueue` 的统一接口。
 - [GitHub Discussions](https://github.com/loco-rs/loco/discussions) — 官方仓库的讨论区。适合问“这样设计对不对”、DDD 分层怎么放这类判断题，回答可被搜索。
 - [官方 Discord](https://discord.gg/fTvyBzwKS8) — 链接来自官方 README。适合快速问答、卡住时求助。
 

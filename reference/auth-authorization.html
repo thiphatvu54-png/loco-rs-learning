@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>认证与授权速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0014-authentication-authorization.html">第 14 课</a></header>
+<h1>认证与授权速查</h1>
+<table>
+<tr><th>Extractor</th><th>数据库</th><th>用途</th></tr>
+<tr><td><code>auth::JWT</code></td><td>不查</td><td>只验证 token，读取 claims</td></tr>
+<tr><td><code>auth::JWTWithUser&lt;users::Model&gt;</code></td><td>按 pid 查</td><td>需要当前用户资料</td></tr>
+</table>
+<pre><code>async fn handler(auth: auth::JWTWithUser&lt;users::Model&gt;) -&gt; Result&lt;Response&gt; {
+    tracing::info!(user_pid = %auth.user.pid, "authorized request");
+    todo!()
+}</code></pre>
+<ul>
+<li>401：身份无效或用户查不到。</li>
+<li>403：身份有效，但业务权限不足。</li>
+<li>授权规则放在领域逻辑，不要把角色判断散落到每个 handler。</li>
+</ul>
+<p class="source"><a href="https://loco.rs/docs/how-to/jwt-auth/">官方 Protect a Route with JWT</a></p>
+</body>
+</html>

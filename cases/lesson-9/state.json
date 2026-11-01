@@ -1,0 +1,12 @@
+{
+  "slug": "lesson-9-testable-workers",
+  "lesson": 9,
+  "topic": "HTTP 202, job id, and worker request tests",
+  "status": "lesson-created",
+  "next_steps": [
+    "在 admin controller 增加 POST /api/admin/downloads/{pid}",
+    "返回 202 和 job_id",
+    "在 tests/requests/admin.rs 增加请求测试",
+    "运行 cargo test --test mod requests::admin"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "slug": "lesson-8-background-workers",
+  "lesson": 8,
+  "topic": "Task / BackgroundWorker / Scheduler",
+  "status": "complete",
+  "learning_evidence": [
+    "learner can distinguish controller enqueue from worker execution",
+    "learner understands perform_later returns a job id and perform does the work"
+  ],
+  "evidence": {
+    "workspace": "playground/admin_api/src/workers/downloader.rs",
+    "registered_in": "playground/admin_api/src/app.rs",
+    "development_mode": "BackgroundAsync",
+    "test_mode": "ForegroundBlocking",
+    "validation": {
+      "cargo_fmt_check": "passed",
+      "cargo_test": "36 passed, 0 failed"
+    }
+  },
+  "next_steps": [
+    "continue with lesson 9 worker request testing",
+    "continue with lesson 10 scheduler and task practice"
+  ]
+}

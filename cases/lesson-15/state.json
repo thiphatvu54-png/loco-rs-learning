@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-15-resource-authorization",
+  "lesson": 15,
+  "topic": "Resource-level authorization",
+  "status": "lesson-created",
+  "next_steps": [
+    "choose a resource owner field",
+    "compare auth.user.pid with resource.owner_pid",
+    "explain 401, 403, and policy-based 404"
+  ]
+}

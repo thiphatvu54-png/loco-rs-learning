@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配置与环境速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0011-config-environments.html">第 11 课</a></header>
+<h1>配置与环境速查</h1>
+<table>
+<tr><th>变量</th><th>作用</th></tr>
+<tr><td><code>LOCO_ENV</code></td><td>选择 development / test / production</td></tr>
+<tr><td><code>LOCO_CONFIG_FOLDER</code></td><td>覆盖 config 文件夹路径</td></tr>
+<tr><td><code>JWT_SECRET</code></td><td>生产 JWT 签名密钥</td></tr>
+<tr><td><code>DATABASE_URL</code></td><td>数据库连接地址</td></tr>
+</table>
+<h2>PowerShell</h2>
+<pre><code>$env:LOCO_ENV = "test"
+cargo loco doctor
+Remove-Item Env:LOCO_ENV</code></pre>
+<h2>模板</h2>
+<pre><code>secret: &lt;%= get_env(name="JWT_SECRET") %&gt;
+port: &lt;%= get_env(name="PORT", default="5150") %&gt;</code></pre>
+<p>生产秘密不写入仓库，也不提供开发默认值；缺失时让启动失败。</p>
+<p class="source"><a href="https://loco.rs/docs/reference/configuration/">官方 Configuration</a> · <a href="https://loco.rs/docs/how-to/deploy/">官方 Deploy to production</a></p>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-12-structured-logging",
+  "lesson": 12,
+  "topic": "Structured logging",
+  "status": "complete",
+  "next_steps": [
+    "add job_id and user identifier fields to a Worker log",
+    "log errors without secrets",
+    "compare compact and JSON formats"
+  ]
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 9 课：让 Worker 可测试</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 9 课 · <a href="../index.html">目录</a> · <a href="../reference/worker-testing.html">Worker 测试速查</a></header>
+
+<h1>让 Worker 可测试：HTTP 202、job id 与执行模式</h1>
+<p class="lede">目标：把第八课的 Worker 接到一个受保护的 POST 接口，并写一个不会竞速的请求测试。</p>
+
+<h2>1. HTTP 接口只负责入队</h2>
+<p>慢任务不应该让请求一直等到下载完成。接口收到请求后，验证身份和参数，调用 <code>perform_later</code>，然后用 <code>202 Accepted</code> 告诉客户端“已接受，正在处理”。</p>
+<pre><code>use crate::workers::downloader::{DownloadWorker, DownloadWorkerArgs};
+
+#[debug_handler]
+pub async fn enqueue_download(
+    _auth: auth::JWT,
+    State(ctx): State&lt;AppContext&gt;,
+    Path(pid): Path&lt;String&gt;,
+) -&gt; Result&lt;Response&gt; {
+    let job_id = DownloadWorker::perform_later(
+        &amp;ctx,
+        DownloadWorkerArgs { user_guid: pid.clone() },
+    ).await?;
+
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(serde_json::json!({ "job_id": job_id, "user_guid": pid })),
+    ).into_response())
+}</code></pre>
+<p>路由放在 <code>admin.rs::routes()</code>：</p>
+<pre><code>.add("downloads/{pid}", post(enqueue_download))</code></pre>
+
+<h2>2. 为什么测试环境用 ForegroundBlocking</h2>
+<table>
+<tr><th>模式</th><th>调用 <code>perform_later</code> 后</th><th>测试意义</th></tr>
+<tr><td><code>ForegroundBlocking</code></td><td>当前流程执行完 Worker</td><td>断言副作用最稳定</td></tr>
+<tr><td><code>BackgroundAsync</code></td><td>同进程异步执行</td><td>开发方便，断言可能竞速</td></tr>
+<tr><td><code>BackgroundQueue</code></td><td>交给持久化队列</td><td>生产环境，可跨重启</td></tr>
+</table>
+<p>第八课的项目已经在 <code>config/test.yaml</code> 使用 <code>ForegroundBlocking</code>。所以测试里调用 <code>perform_later</code> 后，Worker 已经跑完，才会返回 job id。</p>
+
+<h2>3. 动手写请求测试</h2>
+<div class="task">
+<ol>
+<li>给 <code>admin.rs</code> 加上上面的 handler 和路由。</li>
+<li>在 <code>tests/requests/admin.rs</code> 新增测试：用 <code>prepare_data::init_user_login</code> 拿 token 和 pid，请求 <code>POST /api/admin/downloads/{pid}</code>。</li>
+<li>断言状态码是 <code>202</code>，响应 JSON 有非空的 <code>job_id</code>。</li>
+<li>运行 <code>cargo test --test mod requests::admin</code>，再运行完整的 <code>cargo test</code>。</li>
+</ol>
+</div>
+<pre><code>let body: serde_json::Value = res.json();
+assert_eq!(res.status_code(), 202);
+assert!(body["job_id"].as_str().is_some());</code></pre>
+
+<div class="quiz" id="q1">
+<p class="q">客户端收到 <code>202</code> 时，最准确的含义是什么？</p>
+<button data-ok="1">请求已接受处理中</button>
+<button data-ok="0">任务已经执行完成</button>
+<button data-ok="0">请求一定执行失败</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">哪种模式最适合让测试直接断言 Worker 的副作用？</p>
+<button data-ok="1">ForegroundBlocking 模式</button>
+<button data-ok="0">BackgroundAsync 模式</button>
+<button data-ok="0">BackgroundQueue 模式</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。HTTP 状态表达的是请求处理阶段，不是假装任务已经完成。' : '再想一次：202 是 Accepted，ForegroundBlocking 才是测试里的同步执行模式。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/add-worker/">Loco 官方：Add a background worker</a>，重点看 Verify 小节的 <code>ForegroundBlocking</code> 测试。</p>
+<p>完成后告诉我测试输出和你选择 <code>202</code> 的理由；任何不清楚的地方，继续问我。</p>
+
+<nav class="next"><a href="0008-background-workers.html">← 第 8 课：后台任务</a><a href="../reference/worker-testing.html">打开 Worker 测试速查 →</a></nav>
+</body>
+</html>

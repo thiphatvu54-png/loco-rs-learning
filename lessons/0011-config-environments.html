@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 11 课：配置与环境</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 11 课 · <a href="../index.html">目录</a> · <a href="../reference/config-environments.html">配置速查</a></header>
+
+<h1>配置与环境：同一份代码，不同的运行边界</h1>
+<p class="lede">目标：看懂 Loco 如何选择配置文件，并知道 JWT_SECRET、DATABASE_URL 这类值应该放在哪里。</p>
+
+<h2>1. Loco 先选环境，再读 YAML</h2>
+<table>
+<tr><th>环境名</th><th>默认文件</th><th>当前项目用途</th></tr>
+<tr><td><code>development</code></td><td><code>config/development.yaml</code></td><td>本地开发</td></tr>
+<tr><td><code>test</code></td><td><code>config/test.yaml</code></td><td>测试 SQLite、同步 Worker</td></tr>
+<tr><td><code>production</code></td><td><code>config/production.yaml</code></td><td>部署环境</td></tr>
+</table>
+<p><code>LOCO_ENV</code> 优先决定环境；没有设置时默认是 <code>development</code>。同一环境还可以有 <code>*.local.yaml</code>，它按键覆盖主文件，适合机器本地配置。</p>
+
+<h2>2. PowerShell 切换环境</h2>
+<pre><code>$env:LOCO_ENV = "test"
+cargo loco doctor
+Remove-Item Env:LOCO_ENV</code></pre>
+<p>也可以直接检查生产配置：</p>
+<pre><code>$env:LOCO_ENV = "production"
+$env:JWT_SECRET = "base64-secret-from-secret-manager"
+$env:DATABASE_URL = "sqlite://production.sqlite?mode=rwc"
+cargo loco doctor
+Remove-Item Env:LOCO_ENV
+Remove-Item Env:JWT_SECRET
+Remove-Item Env:DATABASE_URL</code></pre>
+
+<h2>3. 默认值和必填值</h2>
+<p>配置里的 <code>get_env</code> 是渲染阶段读取环境变量：</p>
+<pre><code>server:
+  port: &lt;%= get_env(name="PORT", default="5150") %&gt;
+
+auth:
+  jwt:
+    secret: &lt;%= get_env(name="JWT_SECRET") %&gt;</code></pre>
+<p>有 <code>default</code> 的值可以省略；没有 <code>default</code> 的值缺失时应该让应用启动失败。生产配置不应该悄悄退回开发密钥或 localhost 数据库。</p>
+
+<div class="note"><strong>安全规则：</strong>提交 YAML 模板和变量名，不提交真实 JWT secret、数据库密码或 SMTP 密码。生产配置的“启动失败”比带着错误密钥启动更安全。</div>
+
+<h2>4. 快速练习</h2>
+<div class="task">
+<ol>
+<li>查看 <code>development.yaml</code>、<code>test.yaml</code>、<code>production.yaml</code> 中的 <code>workers.mode</code> 和 <code>database.uri</code>。</li>
+<li>设置 <code>$env:LOCO_ENV = "test"</code>，运行 <code>cargo loco doctor</code>，再清理环境变量。</li>
+<li>解释为什么 production 的 <code>JWT_SECRET</code> 没有默认值。</li>
+</ol>
+</div>
+
+<div class="quiz" id="q1">
+<p class="q">哪个变量优先选择 Loco 环境？</p>
+<button data-ok="1">LOCO_ENV 变量</button>
+<button data-ok="0">JWT_SECRET 变量</button>
+<button data-ok="0">DATABASE_URL 变量</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">为什么 production 的 JWT_SECRET 不提供默认值？</p>
+<button data-ok="1">避免错误密钥启动</button>
+<button data-ok="0">减少 YAML 文件长度</button>
+<button data-ok="0">让测试自动通过</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。环境选择和秘密注入是两件事。' : '再想一次：LOCO_ENV 决定读哪份配置，生产秘密缺失应该阻止启动。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/reference/configuration/">Loco 官方：Configuration</a>。重点看环境选择、<code>get_env</code> 和 <code>*.local.yaml</code> 的覆盖关系。</p>
+<p>完成后告诉我：development、test、production 三份配置中，哪个值最不应该共享，以及原因。</p>
+
+<nav class="next"><a href="0010-scheduler-task.html">← 第 10 课：Scheduler + Task</a><a href="../reference/config-environments.html">打开配置速查 →</a></nav>
+</body>
+</html>

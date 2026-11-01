@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-14-authentication-authorization",
+  "lesson": 14,
+  "topic": "Authentication and authorization",
+  "status": "lesson-created",
+  "next_steps": [
+    "compare auth::JWT and JWTWithUser",
+    "choose one handler that needs the current user",
+    "explain the difference between 401 and 403"
+  ]
+}

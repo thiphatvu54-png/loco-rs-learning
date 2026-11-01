@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduler + Task 速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0010-scheduler-task.html">第 10 课</a></header>
+<h1>Scheduler + Task 速查</h1>
+<table>
+<tr><th>需求</th><th>选择</th></tr>
+<tr><td>人工一次性操作</td><td><code>Task</code> + <code>cargo loco task</code></td></tr>
+<tr><td>请求触发慢工作</td><td><code>BackgroundWorker</code> + <code>perform_later</code></td></tr>
+<tr><td>每天/每小时重复运行</td><td><code>Scheduler</code> 调用已注册 <code>Task</code></td></tr>
+</table>
+<h2>命令</h2>
+<pre><code>cargo loco task
+cargo loco generate scheduler
+cargo loco scheduler --config config/scheduler.yaml --list
+cargo loco scheduler --config config/scheduler.yaml --name daily_report</code></pre>
+<h2>配置</h2>
+<pre><code>output: stdout
+jobs:
+  daily_report:
+    run: "daily_report"
+    schedule: "at 9:00 am"
+    run_on_start: false</code></pre>
+<p>英文 schedule 避免误读 Cron；Cron 按秒、分、时、日、月、周、年排列。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/schedule-jobs/">官方 Schedule recurring jobs</a> · <a href="https://loco.rs/docs/how-to/write-task/">官方 Write a one-off task</a></p>
+</body>
+</html>

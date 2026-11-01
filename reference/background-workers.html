@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>后台任务速查</title><link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0008-background-workers.html">第 8 课</a></header>
+<h1>后台任务速查</h1>
+<table>
+<tr><th>机制</th><th>触发</th><th>典型命令/调用</th></tr>
+<tr><td>Task</td><td>人</td><td><code>cargo loco task user:create email:... name:... password:...</code></td></tr>
+<tr><td>BackgroundWorker</td><td>代码</td><td><code>MyWorker::perform_later(&amp;ctx, args).await?</code></td></tr>
+<tr><td>Scheduler</td><td>时间</td><td>配置 <code>scheduler.jobs.*.run</code> 调用 Task</td></tr>
+</table>
+<h2>Worker 清单</h2>
+<ol>
+<li><code>Args: Serialize + Deserialize</code>：传 id，不传整个 Model。</li>
+<li><code>Hooks::connect_workers</code>：<code>queue.register(MyWorker::build(ctx)).await?</code>。</li>
+<li><code>perform</code>：重新查数据；成功 <code>Ok(())</code>，失败返回 <code>Err</code>。</li>
+<li><code>perform_later</code>：返回 <code>Result&lt;String&gt;</code> job id。</li>
+</ol>
+<h2>模式</h2>
+<table>
+<tr><th>配置</th><th>行为</th><th>适合</th></tr>
+<tr><td><code>BackgroundAsync</code></td><td>进程内异步，开发方便</td><td>本地开发</td></tr>
+<tr><td><code>ForegroundBlocking</code></td><td>当前流程执行完才返回</td><td>测试</td></tr>
+<tr><td><code>BackgroundQueue</code></td><td>持久化队列，需 queue backend</td><td>生产</td></tr>
+</table>
+<p class="source"><a href="https://loco.rs/docs/how-to/add-worker/">官方 Add a background worker</a> · <a href="https://loco.rs/docs/explanation/background-processing-model/">官方 Background processing model</a></p>
+</body>
+</html>

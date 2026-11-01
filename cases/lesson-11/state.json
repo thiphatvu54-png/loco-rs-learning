@@ -1,0 +1,12 @@
+{
+  "slug": "lesson-11-config-environments",
+  "lesson": 11,
+  "topic": "Configuration and environments",
+  "status": "lesson-created",
+  "next_steps": [
+    "inspect development, test, and production YAML",
+    "switch LOCO_ENV with PowerShell",
+    "run cargo loco doctor",
+    "explain why production secrets have no defaults"
+  ]
+}

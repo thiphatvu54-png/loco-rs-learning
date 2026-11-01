@@ -1,0 +1,12 @@
+{
+  "slug": "lesson-10-scheduler-task",
+  "lesson": 10,
+  "topic": "Scheduler + Task",
+  "status": "lesson-created",
+  "next_steps": [
+    "run cargo loco task to list registered tasks",
+    "create and register daily_report Task",
+    "schedule it for 09:00 each day",
+    "verify with --list and --name"
+  ]
+}

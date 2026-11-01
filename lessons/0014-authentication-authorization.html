@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 14 课：认证与授权</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 14 课 · <a href="../index.html">目录</a> · <a href="../reference/auth-authorization.html">认证授权速查</a></header>
+
+<h1>认证与授权：知道你是谁，还要判断你能做什么</h1>
+<p class="lede">目标：区分 JWT 验证和业务授权，并在需要用户资料时使用 <code>JWTWithUser</code>。</p>
+
+<h2>1. 两个问题</h2>
+<table>
+<tr><th>问题</th><th>Loco 机制</th><th>结果</th></tr>
+<tr><td>你是谁？</td><td><code>auth::JWT</code></td><td>验证 token，得到 <code>claims.pid</code></td></tr>
+<tr><td>你能做什么？</td><td>handler/model 业务规则</td><td>允许、拒绝或返回资源不存在</td></tr>
+<tr><td>需要完整用户行吗？</td><td><code>auth::JWTWithUser&lt;users::Model&gt;</code></td><td>验证 token 后自动查用户</td></tr>
+</table>
+<p><code>auth::JWT</code> 不查数据库；它只验证签名和过期时间。<code>JWTWithUser</code> 会再按 claims 里的 pid 加载用户，查不到用户时返回 401。</p>
+
+<h2>2. 只需要身份时</h2>
+<pre><code>async fn list(
+    _auth: auth::JWT,
+    State(ctx): State&lt;AppContext&gt;,
+) -&gt; Result&lt;Response&gt; {
+    // 只证明调用者带了有效 JWT
+    // 业务查询继续使用 ctx.db
+    todo!()
+}</code></pre>
+<p>如果只需要“必须登录”，用下划线变量表达“我不读取 claims”。</p>
+
+<h2>3. 需要当前用户时</h2>
+<pre><code>use crate::models::users;
+
+async fn current_user(
+    auth: auth::JWTWithUser&lt;users::Model&gt;,
+) -&gt; Result&lt;Response&gt; {
+    tracing::info!(user_pid = %auth.user.pid, user_email = %auth.user.email, "current user");
+    format::json(serde_json::json!({
+        "pid": auth.user.pid,
+        "email": auth.user.email,
+    }))
+}</code></pre>
+<p>授权规则应该靠近领域对象。例如“只能修改自己的资料”需要比较 <code>auth.user.pid</code> 与资源的 <code>owner_pid</code>；“只有管理员能删除”需要角色或权限字段。当前项目的 users 表还没有 role 字段，所以只能先做身份加载，不能凭空实现管理员规则。</p>
+
+<div class="note"><strong>边界：</strong>401 表示身份无效或用户不存在；403 才表示身份有效但没有权限。业务规则决定何时返回 403。</div>
+
+<h2>4. 快速练习</h2>
+<div class="task">
+<ol>
+<li>把一个只需要登录的 handler 参数写成 <code>_auth: auth::JWT</code>。</li>
+<li>把需要打印用户邮箱的 handler 参数改成 <code>auth::JWTWithUser&lt;users::Model&gt;</code>。</li>
+<li>回答：如果 token 签名有效，但数据库里已经没有这个用户，两个 extractor 分别会怎样？</li>
+</ol>
+</div>
+
+<div class="quiz" id="q1">
+<p class="q">哪个 extractor 会自动加载用户 Model？</p>
+<button data-ok="1">JWTWithUser 加载用户</button>
+<button data-ok="0">JWT 直接加载用户</button>
+<button data-ok="0">Bearer 自动加载用户</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">有效身份但没有业务权限，通常应该返回什么？</p>
+<button data-ok="1">403 Forbidden</button>
+<button data-ok="0">401 Unauthorized</button>
+<button data-ok="0">404 Not Found</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。认证先回答“是谁”，授权再回答“能做什么”。' : '再想一次：JWTWithUser 才会查用户；403 表示已认证但被拒绝。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/jwt-auth/">Loco 官方：Protect a Route with JWT</a>。重点看 <code>JWT</code> 与 <code>JWTWithUser</code> 的区别。</p>
+<p>完成后告诉我：你会在哪个 handler 使用 <code>JWTWithUser</code>，以及为什么。</p>
+
+<nav class="next"><a href="0013-request-test-data.html">← 第 13 课：请求测试</a><a href="../reference/auth-authorization.html">打开认证授权速查 →</a></nav>
+</body>
+</html>

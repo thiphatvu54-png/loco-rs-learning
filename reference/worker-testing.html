@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worker 测试速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0009-testable-workers.html">第 9 课</a></header>
+<h1>Worker 测试速查</h1>
+<table>
+<tr><th>层次</th><th>职责</th><th>断言</th></tr>
+<tr><td>Controller</td><td>鉴权、构造 Args、入队</td><td><code>202</code> 与 <code>job_id</code></td></tr>
+<tr><td>Worker</td><td>重新查数据并执行</td><td>数据库、邮件或日志副作用</td></tr>
+</table>
+<h2>模式选择</h2>
+<ul>
+<li><code>ForegroundBlocking</code>：测试，调用方等待 Worker 完成。</li>
+<li><code>BackgroundAsync</code>：开发，同进程异步，崩溃时任务丢失。</li>
+<li><code>BackgroundQueue</code>：生产，使用 Redis/Postgres/SQLite 队列并可跨重启。</li>
+</ul>
+<h2>最小请求断言</h2>
+<pre><code>assert_eq!(res.status_code(), 202);
+let body: serde_json::Value = res.json();
+assert!(body["job_id"].as_str().is_some());</code></pre>
+<p class="source"><a href="https://loco.rs/docs/how-to/add-worker/">官方 Add a background worker</a> · <a href="https://loco.rs/docs/how-to/choose-queue-backend/">官方 Choose a queue backend</a></p>
+</body>
+</html>

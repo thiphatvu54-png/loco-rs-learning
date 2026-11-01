@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 8 课：后台任务三分法</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 8 课 · Loco 1.2.0 · <a href="../index.html">目录</a> · <a href="../reference/background-workers.html">后台任务速查</a></header>
+
+<h1>后台任务三分法：Task、Worker、Scheduler</h1>
+<p class="lede">目标：看到一段“后台代码”时，能先判断它由谁触发，再用现有 <code>DownloadWorker</code> 完成一次可验证的任务。</p>
+
+<h2>1. 先记住触发者</h2>
+<table>
+<tr><th>机制</th><th>谁触发</th><th>何时用</th><th>本项目证据</th></tr>
+<tr><td><code>Task</code></td><td>人，CLI</td><td>一次性运维或手工操作</td><td><code>src/tasks/user_create.rs</code></td></tr>
+<tr><td><code>BackgroundWorker</code></td><td>代码，请求或另一个任务</td><td>HTTP 不必等待的慢工作</td><td><code>src/workers/downloader.rs</code></td></tr>
+<tr><td>Scheduler</td><td>时钟</td><td>每天、每小时等重复运行</td><td>配置里运行一个 Task</td></tr>
+</table>
+<p>判断顺序只有一句：<strong>人点一次用 Task；请求来了先返回用 Worker；到了时间自动做用 Scheduler。</strong> Scheduler 本身不放业务逻辑，它只按时间调用一个 Task。</p>
+
+<h2>2. Worker 的最小骨架</h2>
+<p>当前项目已经有注册代码：</p>
+<pre><code>async fn connect_workers(ctx: &amp;AppContext, queue: &amp;Queue) -&gt; Result&lt;()&gt; {
+    queue.register(DownloadWorker::build(ctx)).await?;
+    Ok(())
+}</code></pre>
+<p>骨架在 <code>src/workers/downloader.rs</code>。参数必须能序列化，因为队列保存的是参数；传 <strong>标识符</strong>，在 <code>perform</code> 里重新查模型，不要把整个 Model 当快照塞进队列。</p>
+<pre><code>#[derive(Deserialize, Debug, Serialize)]
+pub struct DownloadWorkerArgs {
+    pub user_guid: String,
+}
+
+#[async_trait]
+impl BackgroundWorker&lt;DownloadWorkerArgs&gt; for DownloadWorker {
+    fn build(ctx: &amp;AppContext) -&gt; Self { Self { ctx: ctx.clone() } }
+
+    async fn perform(&amp;self, args: DownloadWorkerArgs) -&gt; Result&lt;()&gt; {
+        let user = users::Model::find_by_pid(&amp;self.ctx.db, &amp;args.user_guid).await?;
+        tracing::info!(user_pid = %user.pid, user_email = %user.email, "download job ran");
+        Ok(())
+    }
+}</code></pre>
+<p>调用方只负责入队：</p>
+<pre><code>let job_id = DownloadWorker::perform_later(
+    &amp;ctx,
+    DownloadWorkerArgs { user_guid: pid.to_string() },
+).await?;
+tracing::info!(%job_id, "download job enqueued");</code></pre>
+<p><code>perform_later</code> 返回的是 job id。需要跟踪、取消或重排队时保存它；不需要追踪时才明确丢弃。</p>
+
+<div class="note"><strong>不要用 <code>tokio::spawn</code> 代替 Worker。</strong>它不会持久化参数，也没有队列重试和可观察的 job id。慢工作应该返回错误，让队列按配置处理重试。</div>
+
+<h2>3. 动手：补完 DownloadWorker</h2>
+<div class="task">
+<ol>
+<li>在 <code>playground\admin_api</code> 执行 <code>cargo loco task</code>，确认现有的两个 Task：<code>user:create</code> 与 <code>user:delete</code>。</li>
+<li>编辑 <code>src/workers/downloader.rs</code>：导入 <code>crate::models::users</code>，按 <code>user_guid</code> 调用 <code>find_by_pid</code>，记录一条 <code>tracing::info!</code>，最后返回 <code>Ok(())</code>。</li>
+<li>运行 <code>cargo fmt --check</code> 和 <code>cargo test</code>。测试环境的 <code>workers.mode</code> 是 <code>ForegroundBlocking</code>，这样测试不会和后台执行竞速。</li>
+<li>再看 <code>config\development.yaml</code> 的 <code>BackgroundAsync</code>：请求只负责入队，日志会在稍后出现。把 <code>perform</code> 临时改成返回 <code>Err(Error::string("demo failure"))</code>，观察失败日志，然后改回 <code>Ok(())</code>。</li>
+</ol>
+</div>
+
+<div class="quiz" id="q1">
+<p class="q">“每天凌晨清理过期会话”最合适的组合是什么？</p>
+<button data-ok="1">Scheduler 调用 Task</button>
+<button data-ok="0">Controller 直接循环</button>
+<button data-ok="0">Worker 自己计时</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">为什么 <code>DownloadWorkerArgs</code> 传 <code>user_guid</code>，而不是整个 User Model？</p>
+<button data-ok="1">队列保存可重载标识</button>
+<button data-ok="0">模型不能实现 Debug</button>
+<button data-ok="0">UUID 不能放进结构体</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。把“谁触发”与“做什么”分开，后台设计会清楚很多。' : '再想一次：先找触发者。人、请求、时钟分别对应 Task、Worker、Scheduler。';
+    });
+  });
+});
+</script>
+
+<h2>4. 主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/add-worker/">Loco 官方：Add a background worker</a>。重点看注册、<code>perform_later</code> 返回 job id，以及三种 worker mode 的差别。</p>
+<p>做完练习后，直接告诉我：你的 <code>perform</code> 做了什么、日志出现在哪里、为什么测试用 <code>ForegroundBlocking</code>。有任何不清楚的地方，继续问我。</p>
+
+<nav class="next"><a href="0007-auth-jwt.html">← 第 7 课：JWT</a><a href="../reference/background-workers.html">打开后台任务速查 →</a></nav>
+<footer>证据来源：工作区 <code>playground/admin_api</code> 的真实代码与配置；官方文档链接见上。</footer>
+</body>
+</html>

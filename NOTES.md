@@ -1,5 +1,19 @@
 # Notes
 
+- 第 15 课已创建：用 JWTWithUser 做资源级授权，区分 401、403 和策略性 404。
+
+- 第 14 课已创建：区分 auth::JWT、JWTWithUser 与 401/403 授权边界。
+
+- 第 13 课已创建：理解 init_user_login、测试数据库和 Arrange / Act / Assert。
+
+- 第 12 课已创建：用 tracing 字段和环境配置做结构化日志。
+
+- 第 11 课已创建：用 LOCO_ENV、get_env 和环境配置区分 development / test / production。
+
+- 第 10 课已创建：Scheduler 只管时间，Task 负责业务逻辑。
+
+- 第 9 课已创建：把 Worker 接到 HTTP 202 接口，并用 ForegroundBlocking 写请求测试。
+
 ## 学习者偏好
 - 中文，干脆，少废话。
 - 先给命令和真实结果，再用一两句说为什么。

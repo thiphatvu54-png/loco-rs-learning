@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>结构化日志速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0012-structured-logging.html">第 12 课</a></header>
+<h1>结构化日志速查</h1>
+<pre><code>tracing::info!(job_id = %job_id, user_pid = %pid, "job enqueued");
+tracing::error!(error = %err, user_pid = %pid, "job failed");</code></pre>
+<table>
+<tr><th>配置</th><th>建议</th></tr>
+<tr><td>development</td><td><code>debug</code> + <code>compact</code></td></tr>
+<tr><td>test</td><td>关闭或减少日志</td></tr>
+<tr><td>production</td><td><code>info</code> + <code>json</code></td></tr>
+</table>
+<p>不要记录密码、JWT secret、完整 token；记录 job id、pid、资源 id 和错误文本。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/configure-logging/">官方 Configure logging</a></p>
+</body>
+</html>

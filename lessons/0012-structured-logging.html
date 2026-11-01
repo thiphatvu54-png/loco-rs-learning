@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 12 课：结构化日志</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 12 课 · <a href="../index.html">目录</a> · <a href="../reference/structured-logging.html">日志速查</a></header>
+
+<h1>结构化日志：让错误能被定位</h1>
+<p class="lede">目标：用 <code>tracing</code> 记录“发生了什么、关联哪个对象、结果如何”，并按环境切换日志级别和格式。</p>
+
+<h2>1. 日志不是随便打印字符串</h2>
+<pre><code>tracing::info!(
+    job_id = %job_id,
+    user_pid = %user.pid,
+    "download job enqueued"
+);</code></pre>
+<p>消息是人读的，字段是机器筛选的。以后在日志平台里可以按 <code>job_id</code> 或 <code>user_pid</code> 找完整链路。</p>
+<p>失败时保留错误上下文，但不要打印密码、JWT secret 或完整 token：</p>
+<pre><code>if let Err(err) = do_work().await {
+    tracing::error!(error = %err, user_pid = %pid, "download failed");
+    return Err(err);
+}</code></pre>
+
+<h2>2. 按环境选择级别和格式</h2>
+<table>
+<tr><th>环境</th><th>典型 level</th><th>典型 format</th><th>目的</th></tr>
+<tr><td>development</td><td><code>debug</code></td><td><code>compact</code></td><td>本地排查</td></tr>
+<tr><td>test</td><td><code>debug</code></td><td><code>compact</code></td><td>减少噪声</td></tr>
+<tr><td>production</td><td><code>info</code></td><td><code>json</code></td><td>交给日志聚合器</td></tr>
+</table>
+<p>当前项目的生产配置已经使用 JSON；日志级别可以通过 <code>LOG_LEVEL</code> 覆盖：</p>
+<pre><code>$env:LOG_LEVEL = "debug"
+cargo loco start
+Remove-Item Env:LOG_LEVEL</code></pre>
+
+<h2>3. 快速练习</h2>
+<div class="task">
+<ol>
+<li>给 Worker 的成功日志加上 <code>job_id</code> 或用户标识字段。</li>
+<li>给失败分支加 <code>tracing::error!</code>，只记录错误文本和业务 id。</li>
+<li>比较 development 的 compact 输出和 production 的 JSON 配置。</li>
+</ol>
+</div>
+
+<div class="quiz" id="q1">
+<p class="q">为什么日志同时写 message 和字段？</p>
+<button data-ok="1">人读消息机器筛选</button>
+<button data-ok="0">字段只是重复消息</button>
+<button data-ok="0">JSON 只能显示字段</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">生产日志为什么通常使用 JSON？</p>
+<button data-ok="1">方便聚合检索分析</button>
+<button data-ok="0">因为 JSON 更加保密</button>
+<button data-ok="0">因为 compact 不能启动</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。message 便于阅读，字段便于检索。' : '再想一次：结构化字段是给日志工具筛选的。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/configure-logging/">Loco 官方：Configure logging</a>。重点看不同环境的 level、format 和 JSON 输出。</p>
+<p>完成后告诉我：你会给 Worker 日志加哪两个字段，以及为什么。</p>
+
+<nav class="next"><a href="0011-config-environments.html">← 第 11 课：配置与环境</a><a href="../reference/structured-logging.html">打开日志速查 →</a></nav>
+</body>
+</html>

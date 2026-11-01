@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 15 课：资源级授权</title><link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 15 课 · <a href="../index.html">目录</a> · <a href="../reference/resource-authorization.html">授权速查</a></header>
+<h1>资源级授权：当前用户能不能改这条数据</h1>
+<p class="lede">目标：把“已登录”进一步变成业务规则：只能修改自己的资源，管理员才能删除。</p>
+
+<h2>1. 三步授权</h2>
+<ol>
+<li><code>JWTWithUser</code> 验证 token 并加载当前用户。</li>
+<li>查询目标资源。</li>
+<li>比较当前用户和资源的 owner/role，再决定 200、403 或 404。</li>
+</ol>
+<pre><code>async fn update_profile(
+    auth: auth::JWTWithUser&lt;users::Model&gt;,
+    State(ctx): State&lt;AppContext&gt;,
+    Path(id): Path&lt;i64&gt;,
+) -&gt; Result&lt;Response&gt; {
+    let Some(profile) = profiles::Entity::find_by_id(id).one(&amp;ctx.db).await? else {
+        return Err(Error::NotFound);
+    };
+
+    if profile.owner_pid != auth.user.pid {
+        return Err(Error::Forbidden);
+    }
+
+    // 通过授权后才更新
+    todo!()
+}</code></pre>
+<p>当前项目的 categories 没有 owner 字段，所以不能凭空实现“只能改自己的分类”；要先有领域字段或角色，再写授权规则。</p>
+
+<h2>2. 401、403、404 的区别</h2>
+<table>
+<tr><th>状态</th><th>含义</th></tr>
+<tr><td>401</td><td>没有有效身份，或 JWTWithUser 找不到用户</td></tr>
+<tr><td>403</td><td>身份有效，但没有操作权限</td></tr>
+<tr><td>404</td><td>资源不存在；也可有意隐藏资源存在性</td></tr>
+</table>
+<div class="note"><strong>隐藏资源存在性：</strong>有些系统会把“不是你的资源”也返回 404，避免泄露资源 id。选择 403 还是 404 是产品和安全策略，不是 extractor 自动决定的。</div>
+
+<h2>3. 快速练习</h2>
+<div class="task"><ol>
+<li>找一个需要用户邮箱的 handler，改用 <code>auth::JWTWithUser&lt;users::Model&gt;</code>。</li>
+<li>写出一条授权规则：当前用户 pid 必须等于资源 owner_pid。</li>
+<li>说明“用户不存在”和“用户存在但无权限”分别返回什么。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">用户已登录，但不是资源 owner，应该优先考虑什么？</p>
+<button data-ok="1">403 或策略性 404</button><button data-ok="0">一定返回 200</button><button data-ok="0">一定返回 401</button><p class="fb" aria-live="polite"></p></div>
+<div class="quiz" id="q2"><p class="q">哪个值适合拿来做 owner 比较？</p>
+<button data-ok="1">auth.user.pid</button><button data-ok="0">JWT 完整字符串</button><button data-ok="0">用户密码哈希</button><p class="fb" aria-live="polite"></p></div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) { var fb=quiz.querySelector('.fb'); quiz.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right','wrong'); }); var ok=b.dataset.ok==='1'; b.classList.add(ok?'right':'wrong'); fb.textContent=ok?'答对。授权比较的是业务身份与资源关系。':'再想一次：认证有效不代表拥有资源权限。'; }); }); });
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/jwt-auth/">Loco 官方：Protect a Route with JWT</a>。重点看 <code>JWTWithUser</code> 加载用户后的 handler 边界。</p>
+<p>完成后告诉我：你会给哪个资源增加 owner 字段，以及授权比较放在哪里。</p>
+<nav class="next"><a href="0014-authentication-authorization.html">← 第 14 课：认证与授权</a><a href="../reference/resource-authorization.html">打开授权速查 →</a></nav>
+</body></html>

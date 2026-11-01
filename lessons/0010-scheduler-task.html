@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 10 课：Scheduler + Task</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 10 课 · <a href="../index.html">目录</a> · <a href="../reference/scheduler-task.html">Scheduler 速查</a></header>
+
+<h1>定时任务：Scheduler 只管时间，Task 负责工作</h1>
+<p class="lede">目标：把“一次手动执行”和“每天自动执行”拆成两个清楚的部件。</p>
+
+<h2>1. 三种触发方式</h2>
+<table>
+<tr><th>机制</th><th>触发者</th><th>代码位置</th></tr>
+<tr><td>Task</td><td>人或 Scheduler</td><td><code>src/tasks/*.rs</code></td></tr>
+<tr><td>BackgroundWorker</td><td>请求或代码</td><td><code>src/workers/*.rs</code></td></tr>
+<tr><td>Scheduler</td><td>时钟</td><td><code>config/&lt;env&gt;.yaml</code> 或专用 scheduler 文件</td></tr>
+</table>
+<p>Scheduler 不应该塞业务逻辑。它只在指定时间运行一个已经注册的 Task。你项目里的 <code>user:create</code> 和 <code>user:delete</code> 已经是可手动运行的 Task。</p>
+
+<h2>2. 先确认 Task，再安排时间</h2>
+<pre><code>cargo loco task</code></pre>
+<p>这会列出 <code>Hooks::register_tasks</code> 注册的任务。运行任务的通用格式是：</p>
+<pre><code>cargo loco task &lt;TASK_NAME&gt; [KEY:VALUE ...]</code></pre>
+<p>例如项目已有：</p>
+<pre><code>cargo loco task user:delete pid:01H... force:true</code></pre>
+<p>Scheduler 的 <code>run</code> 字段写的就是这段任务名和参数，不是 Rust 函数名。</p>
+
+<h2>3. 写一个定时配置</h2>
+<p>生成专用文件：</p>
+<pre><code>cargo loco generate scheduler</code></pre>
+<p>然后编辑 <code>config\scheduler.yaml</code>：</p>
+<pre><code>output: stdout
+jobs:
+  purge_demo:
+    run: "user:delete pid:01H... force:true"
+    schedule: "at 3:00 am"
+    tags: ["maintenance"]
+
+  quick_check:
+    run: "user:create email:demo@example.com name:Demo password:secret123"
+    schedule: "run every 30 seconds"
+    run_on_start: false</code></pre>
+<p>专用文件要显式传给 CLI：</p>
+<pre><code>cargo loco scheduler --config config/scheduler.yaml --list
+cargo loco scheduler --config config/scheduler.yaml --name quick_check</code></pre>
+<p>如果把配置写进 <code>config\development.yaml</code> 的 <code>scheduler:</code> 区块，才可以直接运行 <code>cargo loco scheduler --list</code>。Cron 表达式有<strong>秒</strong>这一列；初学时用英文时间表达式更不容易错。</p>
+
+<div class="note"><strong>安全边界：</strong>生产环境不要把真实密码直接写进 scheduler 文件。定时任务应该调用一个幂等的清理/报告 Task，敏感值从环境变量或数据库读取。</div>
+
+<h2>4. 快速练习</h2>
+<div class="task">
+<ol>
+<li>运行 <code>cargo loco task</code>，指出列表里的 Task 名称。</li>
+<li>创建一个只打印日志的 <code>daily_report</code> Task，注册到 <code>Hooks::register_tasks</code>。</li>
+<li>在 scheduler 配置里让它每天 09:00 运行。</li>
+<li>用 <code>--list</code> 检查解析结果，再用 <code>--name daily_report</code> 手动触发一次。</li>
+</ol>
+</div>
+
+<div class="quiz" id="q1">
+<p class="q">Scheduler 的 <code>run</code> 字段应该写什么？</p>
+<button data-ok="1">已注册 Task 名和参数</button>
+<button data-ok="0">Rust 函数完整路径</button>
+<button data-ok="0">数据库 SQL 查询语句</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2">
+<p class="q">Loco Cron 表达式最容易漏掉哪一列？</p>
+<button data-ok="1">最前面的秒字段</button>
+<button data-ok="0">最后面的年字段</button>
+<button data-ok="0">中间的月份字段</button>
+<p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。调度和业务逻辑保持分离。' : '再想一次：Task 名是注册表里的名字；Loco Cron 从秒开始。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/schedule-jobs/">Loco 官方：Schedule recurring jobs</a>。重点看专用配置文件、<code>--list</code>、<code>--name</code> 和英文时间表达式。</p>
+<p>做完后告诉我：你的 Task 名称、schedule 写法，以及为什么 Scheduler 不直接放业务代码。</p>
+
+<nav class="next"><a href="0009-testable-workers.html">← 第 9 课：Worker 测试</a><a href="../reference/scheduler-task.html">打开 Scheduler 速查 →</a></nav>
+</body>
+</html>

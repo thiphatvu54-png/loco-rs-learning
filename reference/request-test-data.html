@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>请求测试数据速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0013-request-test-data.html">第 13 课</a></header>
+<h1>请求测试数据速查</h1>
+<table>
+<tr><th>阶段</th><th>动作</th></tr>
+<tr><td>Arrange</td><td>注册测试用户、查 pid/token、构造 header</td></tr>
+<tr><td>Act</td><td>用 <code>TestServer</code> 发 HTTP 请求</td></tr>
+<tr><td>Assert</td><td>断言状态码、JSON 或数据库副作用</td></tr>
+</table>
+<pre><code>let user = users::Model::find_by_email(&amp;ctx.db, email).await?;
+let response = request.get("/api/auth/current").add_header(key, value).await;
+assert_eq!(response.status_code(), 200);</code></pre>
+<p><code>ctx.db</code> 是 test 环境数据库；不要把测试 helper 带进生产代码。</p>
+<p class="source"><a href="https://loco.rs/docs/how-to/request-tests/">官方 Write request tests</a> · <a href="https://loco.rs/docs/how-to/seed-data/">官方 Seed data</a></p>
+</body>
+</html>

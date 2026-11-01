@@ -1,0 +1,11 @@
+{
+  "slug": "lesson-13-request-test-data",
+  "lesson": 13,
+  "topic": "Request test data boundaries",
+  "status": "lesson-created",
+  "next_steps": [
+    "mark Arrange, Act, Assert in an existing request test",
+    "explain why init_user_login returns user and token",
+    "assert current-user pid matches the test user pid"
+  ]
+}

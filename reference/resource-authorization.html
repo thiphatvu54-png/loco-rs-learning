@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>资源级授权速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0015-resource-authorization.html">第 15 课</a></header>
+<h1>资源级授权速查</h1>
+<pre><code>auth::JWTWithUser&lt;users::Model&gt;
+    ↓
+auth.user.pid == resource.owner_pid
+    ↓
+允许 / 403 / 策略性 404</code></pre>
+<table><tr><th>状态</th><th>含义</th></tr><tr><td>401</td><td>身份无效或用户不存在</td></tr><tr><td>403</td><td>身份有效但无权限</td></tr><tr><td>404</td><td>资源不存在，或隐藏资源存在性</td></tr></table>
+<p class="source"><a href="https://loco.rs/docs/how-to/jwt-auth/">官方 Protect a Route with JWT</a></p></body></html>
