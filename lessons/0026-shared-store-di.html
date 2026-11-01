@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 26 课：SharedStore 依赖注入</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 26 课 · <a href="../index.html">目录</a> · <a href="../reference/shared-store-di.html">速查</a></header>
+<h1>SharedStore：把运行时服务注入 handler</h1>
+<p class="lede">这是 Loco 的类型化依赖注入入口：在 <code>after_context</code> 里放入服务，handler 用 <code>SharedStore&lt;T&gt;</code> extractor 取出。</p>
+
+<h2>1. 启动时装配，请求时读取</h2>
+<pre><code>Hooks::after_context(ctx)
+    ↓ ctx.shared_store.insert(RatePolicy)
+AppContext 进入 routes / middleware / handlers
+    ↓
+SharedStore&lt;RatePolicy&gt; extractor 按类型取值</code></pre>
+<p><code>AppContext</code> 只创建一次并被后续组件共享。<code>SharedStore</code> 用 Rust <code>TypeId</code> 做类型索引，不用字符串 key，所以取值类型必须完全一致。</p>
+
+<h2>2. 在 after_context 中构建服务</h2>
+<pre><code>#[derive(Clone)]
+struct RatePolicy {
+    max_per_minute: u32,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+struct AppSettings {
+    rate_limit_per_minute: u32,
+}
+
+impl Default for AppSettings {
+    fn default() -&gt; Self {
+        Self { rate_limit_per_minute: 60 }
+    }
+}
+
+#[async_trait]
+impl Hooks for App {
+    async fn after_context(ctx: AppContext) -&gt; Result&lt;AppContext&gt; {
+        let settings: AppSettings = ctx.config.settings()?;
+        ctx.shared_store.insert(RatePolicy {
+            max_per_minute: settings.rate_limit_per_minute,
+        });
+        Ok(ctx)
+    }
+}</code></pre>
+<p>这里用 <code>?</code> 是合理的，因为 <code>after_context</code> 返回 <code>Result&lt;AppContext&gt;</code>；错误配置可以在启动阶段失败，而不是第一个请求才 panic。</p>
+
+<h2>3. 在 handler 中注入</h2>
+<pre><code>async fn stats(
+    SharedStore(policy): SharedStore&lt;RatePolicy&gt;,
+) -&gt; Result&lt;Response&gt; {
+    tracing::info!(limit = policy.max_per_minute, "using rate policy");
+    format::json(serde_json::json!({
+        "limit": policy.max_per_minute
+    }))
+}</code></pre>
+<p>找不到类型时，<code>SharedStore&lt;T&gt;</code> extractor 会返回内部错误并记录类型名。需要共享可变状态时，通常存入 <code>Arc&lt;Mutex&lt;T&gt;&gt;</code> 或专门的并发容器，而不是把裸可变值塞进去。</p>
+
+<h2>4. 和其他注入方式比较</h2>
+<table><tr><th>方式</th><th>适合</th></tr>
+  <tr><td><code>State&lt;AppContext&gt;</code></td><td>数据库、配置、Loco 已有基础设施</td></tr>
+  <tr><td><code>SharedStore&lt;T&gt;</code></td><td>应用自定义服务、策略、客户端、缓存包装器</td></tr>
+  <tr><td><code>Json / Path / Query</code></td><td>来自当前 HTTP 请求的数据</td></tr>
+</table>
+
+<div class="quiz" id="q1"><p class="q">SharedStore 查找服务使用什么作为 key？</p>
+  <button data-ok="0">字符串名称</button><button data-ok="1">Rust 类型</button><button data-ok="0">路由路径</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">在哪个 Hook 里解析配置并用 ? 返回错误最合适？</p>
+  <button data-ok="0">middlewares</button><button data-ok="1">after_context</button><button data-ok="0">handler 返回 Response 后</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：SharedStore 是类型索引，after_context 有 Result 错误边界。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/explanation/architecture/">Loco 官方：request lifecycle</a> · <a href="https://loco.rs/docs/reference/hooks/">Hooks trait</a> · <a href="https://loco.rs/docs/reference/configuration/">Configuration</a></p>
+<p>下一步可以挑战：把一个带连接池的自定义客户端放入 <code>SharedStore</code>，再在 request test 中验证它被 handler 取到。</p>
+<nav class="next"><a href="0025-custom-middleware-config.html">← 第 25 课：自定义 middleware 配置</a><a href="../reference/shared-store-di.html">打开速查 →</a></nav>
+</body>
+</html>

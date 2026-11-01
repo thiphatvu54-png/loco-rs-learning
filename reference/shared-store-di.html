@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SharedStore 依赖注入速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0026-shared-store-di.html">第 26 课</a></header>
+<h1>SharedStore 依赖注入</h1>
+<pre><code>async fn after_context(ctx: AppContext) -&gt; Result&lt;AppContext&gt; {
+    ctx.shared_store.insert(MyService::new()?);
+    Ok(ctx)
+}
+
+async fn handler(SharedStore(service): SharedStore&lt;MyService&gt;) -&gt; Result&lt;Response&gt; { ... }</code></pre>
+<table><tr><th>组件</th><th>作用</th></tr><tr><td><code>after_context</code></td><td>启动阶段装配、可返回配置错误</td></tr><tr><td><code>SharedStore::insert</code></td><td>按类型存入</td></tr><tr><td><code>SharedStore&lt;T&gt;</code></td><td>handler 中按类型提取并 clone</td></tr></table>
+<p>共享可变服务通常存 <code>Arc&lt;Mutex&lt;T&gt;&gt;</code> 或并发容器。类型不同就取不到，即使字符串名字相同也无效。</p>
+<p class="source"><a href="https://loco.rs/docs/explanation/architecture/">官方 request lifecycle</a> · <a href="https://loco.rs/docs/reference/hooks/">官方 Hooks</a></p>
+</body></html>

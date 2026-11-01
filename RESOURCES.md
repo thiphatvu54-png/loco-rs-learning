@@ -45,6 +45,7 @@
 - [官方 Discord](https://discord.gg/fTvyBzwKS8) — 链接来自官方 README。适合快速问答、卡住时求助。
 
 ## Gaps
+- [Architecture: the request lifecycle](https://loco.rs/docs/explanation/architecture/) — `AppContext`、`after_context` 与请求生命周期中的依赖共享。
 - [Configuration](https://loco.rs/docs/reference/configuration/) — `settings:` 与 `Config::settings::<T>()` 的应用自定义配置。
 - 官方文档没有专门讲 DDD 分层的页面。DDD 部分只能从 Loco 的默认结构（controllers / models / dtos / workers）出发自己推，需要判断时去 Discussions 问。
 

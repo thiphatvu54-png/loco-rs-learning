@@ -1,5 +1,7 @@
 # Notes
 
+- 第 26 课已创建：用 `after_context` 装配应用服务，再通过 Loco 的 `SharedStore<T>` extractor 按类型注入 handler。
+
 - 第 25 课已创建：用 Loco 的 `settings:` 和 `Config::settings::<T>()` 给自定义 middleware 提供环境配置，并解释 `Hooks::middlewares` 的错误边界。
 
 - 第 24 课已创建：从零实现带响应头的自定义 `MiddlewareLayer`，并注册到 `Hooks::middlewares` 全局栈。
