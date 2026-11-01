@@ -50,3 +50,8 @@
 - [Add middleware](https://loco.rs/docs/how-to/add-middleware/) — `Routes::layer` 的路由组作用域。
 - [Protect a Route with JWT](https://loco.rs/docs/how-to/jwt-auth/) — `JWT` 与 `JWTWithUser` 的 handler 边界。
 - [Write request (controller) tests](https://loco.rs/docs/how-to/request-tests/) — `request::<App, _, _>`、TestServer 与状态断言。
+
+- [Handle errors](https://loco.rs/docs/how-to/handle-errors/) — Loco 错误到 HTTP 状态和 JSON 的映射。
+
+- [Middleware catalog](https://loco.rs/docs/reference/middleware/) — MiddlewareLayer、默认栈顺序和 MiddlewareStackExt。
+- [Hooks trait](https://loco.rs/docs/reference/hooks/) — Hooks::middlewares 的全局扩展点。

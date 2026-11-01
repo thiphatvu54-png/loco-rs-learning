@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 23 课：Loco MiddlewareLayer 栈</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 23 课 · <a href="../index.html">目录</a> · <a href="../reference/loco-middleware-stack.html">速查</a></header>
+<h1>Loco 的 MiddlewareLayer 栈：改默认栈，而不是重写应用</h1>
+<p class="lede">这是 Loco 特有的扩展点：用 <code>Hooks::middlewares</code> 拿到默认 middleware 栈，再用 <code>MiddlewareStackExt</code> 做插入、替换、删除。</p>
+
+<h2>1. 框架调用链</h2>
+<pre><code>Hooks::middlewares(ctx)
+    ↓
+Vec&lt;Box&lt;dyn MiddlewareLayer&gt;&gt;
+    ↓ 逐个调用 mid.apply(app)
+Axum Router</code></pre>
+<p><code>MiddlewareLayer</code> 必须提供四件事：稳定的 <code>name()</code>、开关 <code>is_enabled()</code>、可观察配置 <code>config()</code>、以及把 layer 应用到 Axum Router 的 <code>apply()</code>。默认栈由 Loco 构造，不需要你复制一份。</p>
+
+<h2>2. 在 Hooks 中替换一个默认 middleware</h2>
+<pre><code>use loco_rs::app::{AppContext, Hooks};
+use loco_rs::controller::middleware::{
+    self, MiddlewareLayer, MiddlewareStackExt,
+};
+
+impl Hooks for App {
+    // 其他 Hooks 方法省略
+    fn middlewares(ctx: &amp;AppContext) -&gt; Vec&lt;Box&lt;dyn MiddlewareLayer&gt;&gt; {
+        let mut stack = middleware::default_middleware_stack(ctx);
+
+        // 仍保留原来的位置，只把 X-Powered-By 改成自己的标识
+        stack.replace(
+            "powered_by",
+            Box::new(middleware::powered_by::new(Some("admin-api"))),
+        );
+
+        stack
+    }
+}</code></pre>
+<p>结果是响应头变为 <code>X-Powered-By: admin-api</code>。<code>replace</code> 按 <code>name()</code> 找第一个匹配项；找不到时保留原栈并记录 warning。</p>
+
+<h2>3. 插入位置和请求顺序</h2>
+<pre><code>stack.insert_after(
+    "request_id",
+    Box::new(middleware::powered_by::new(Some("admin-api"))),
+);</code></pre>
+<p>栈的 Vec 顺序是构建顺序，但请求顺序是 LIFO：后面的 middleware 先接到请求。<code>insert_after("request_id", ...)</code> 会让新 middleware 在请求进入时先于 <code>request_id</code> 看到请求。</p>
+<table><tr><th>方法</th><th>找不到目标时</th></tr>
+  <tr><td><code>insert_before</code></td><td>追加，并记录 warning</td></tr>
+  <tr><td><code>insert_after</code></td><td>追加，并记录 warning</td></tr>
+  <tr><td><code>replace</code></td><td>保持不变，并记录 warning</td></tr>
+  <tr><td><code>delete</code></td><td>保持不变，并记录 warning</td></tr>
+</table>
+
+<h2>4. 这和 Routes::layer 的分界</h2>
+<pre><code>Hooks::middlewares(...) // 全应用，遵守 Loco 的 MiddlewareLayer 协议
+Routes::layer(...)      // 一个 Routes 组，直接套 Tower Layer</code></pre>
+<p>需要配置、出现在 Loco middleware 栈、可被统一 introspect 时，用 <code>MiddlewareLayer</code>；只影响一组 controller 时，用 <code>Routes::layer</code>。</p>
+
+<div class="task"><ol>
+  <li>把 <code>powered_by</code> 替换为 <code>admin-api</code>。</li>
+  <li>运行应用后，用 <code>curl.exe -I http://127.0.0.1:5150/api/categories</code> 检查响应头。</li>
+  <li>再把 <code>replace</code> 改成 <code>delete</code>，观察响应头和日志差异。</li>
+</ol></div>
+
+<div class="quiz" id="q1"><p class="q">想修改全应用默认 middleware 栈，应该重写什么？</p>
+  <button data-ok="0">每个 controller</button><button data-ok="1">Hooks::middlewares</button><button data-ok="0">每个 handler</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">Vec 中后加入的 middleware，通常先看到入站请求吗？</p>
+  <button data-ok="1">是，LIFO</button><button data-ok="0">否，FIFO</button><button data-ok="0">只影响响应</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：Loco 通过 Hooks 暴露全局栈，Axum layer 应用顺序是 LIFO。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/reference/middleware/">Loco 官方：Middleware catalog</a> · <a href="https://loco.rs/docs/how-to/add-middleware/">Loco 官方：Add middleware</a> · <a href="https://loco.rs/docs/reference/hooks/">Loco 官方：Hooks trait</a></p>
+<p>这课如果要继续加深，可以问我：如何从零实现一个带配置的自定义 <code>MiddlewareLayer</code>，以及如何让它进入测试环境而不污染生产栈。</p>
+<nav class="next"><a href="0022-401-vs-403.html">← 第 22 课：401 与 403</a><a href="../reference/loco-middleware-stack.html">打开速查 →</a></nav>
+</body>
+</html>

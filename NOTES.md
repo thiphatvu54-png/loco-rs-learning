@@ -1,5 +1,9 @@
 # Notes
 
+- 第 23 课已创建：进入 Loco 独有的 `MiddlewareLayer`、`Hooks::middlewares` 和 `MiddlewareStackExt`，学习改默认全局 middleware 栈。
+
+- 第 22 课已创建：区分 JWT 认证失败的 401 与业务授权失败的 403，并用 `Error::CustomError` 构造 403。
+
 - 第 21 课已创建：用 `request::<App, _, _>` 测试 JWT 保护路由，先锁定无 token 的 401，再锁定有效 token 的成功分支。
 
 - 第 20 课已创建：区分 `Routes::layer` 的路由组基础设施职责，与 `JWT` / `JWTWithUser` extractor 的 handler 认证职责；强调 `.add(...).layer(...)` 顺序。

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Loco MiddlewareLayer 栈速查</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body>
+<header class="course">Loco 速查 · <a href="../index.html">目录</a> · <a href="../lessons/0023-loco-middleware-stack.html">第 23 课</a></header>
+<h1>Loco MiddlewareLayer 栈</h1>
+<pre><code>fn middlewares(ctx: &amp;AppContext) -&gt; Vec&lt;Box&lt;dyn MiddlewareLayer&gt;&gt; {
+    let mut stack = default_middleware_stack(ctx);
+    stack.replace("powered_by", Box::new(powered_by::new(Some("admin-api"))));
+    stack
+}</code></pre>
+<table><tr><th>用途</th><th>方法</th></tr><tr><td>前后插入</td><td><code>insert_before / insert_after</code></td></tr><tr><td>替换</td><td><code>replace</code></td></tr><tr><td>删除</td><td><code>delete</code></td></tr></table>
+<p><strong>范围：</strong><code>Hooks::middlewares</code> 是全应用；<code>Routes::layer</code> 是单个 Routes 组。Vec 构建顺序和入站请求顺序相反。</p>
+<p class="source"><a href="https://loco.rs/docs/reference/middleware/">官方 Middleware catalog</a> · <a href="https://loco.rs/docs/reference/hooks/">官方 Hooks trait</a></p>
+</body></html>

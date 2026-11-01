@@ -1,0 +1,11 @@
+﻿{
+    "slug":  "lesson-22-401-vs-403",
+    "lesson":  22,
+    "topic":  "Authentication failure versus authorization failure",
+    "status":  "follow-up-completed",
+    "next_steps":  [
+                       "write a request test for malformed or expired JWT",
+                       "write a request test for authenticated but forbidden access",
+                       "move reusable ownership rules into the model"
+                   ]
+}

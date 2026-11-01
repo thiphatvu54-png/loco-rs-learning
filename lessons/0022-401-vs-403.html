@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第 22 课：401 与 403</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="course">Loco 速学 · 第 22 课 · <a href="../index.html">目录</a> · <a href="../reference/401-vs-403.html">速查</a></header>
+<h1>401 与 403：认证失败和授权失败</h1>
+<p class="lede">目标：看到错误状态码，就能判断请求卡在 JWT 身份层，还是卡在业务权限层。</p>
+
+<h2>1. 一句话区分</h2>
+<table>
+  <tr><th>状态</th><th>含义</th><th>典型来源</th></tr>
+  <tr><td><code>401 Unauthorized</code></td><td>服务端无法确认你是谁</td><td>缺少、过期、错误 JWT；用户查不到</td></tr>
+  <tr><td><code>403 Forbidden</code></td><td>已经知道你是谁，但你不能做这件事</td><td>角色、资源所有权、组织权限不满足</td></tr>
+</table>
+<p>Loco 的 JWT extractor 会在 handler 之前拒绝缺失或无效 token；<code>JWTWithUser</code> 找不到用户时也会返回 401。业务 handler 自己判断权限时，才进入 403 的范围。参见 <a href="https://loco.rs/docs/how-to/jwt-auth/">JWT 官方文档</a>。</p>
+
+<h2>2. 认证层：401</h2>
+<pre><code>async fn current(
+    auth: auth::JWTWithUser&lt;users::Model&gt;,
+) -&gt; Result&lt;Response&gt; {
+    // 没有 token 或 token 无效时，这一行之前就已经返回 401
+    format::json(&amp;auth.user)
+}</code></pre>
+<p>所以测试应该先写：</p>
+<pre><code>let response = request.get("/api/categories").await;
+assert_eq!(response.status_code(), 401);</code></pre>
+
+<h2>3. 业务层：403</h2>
+<pre><code>use axum::http::StatusCode;
+use loco_rs::controller::ErrorDetail;
+
+if !auth.user.can_manage_category(&amp;category) {
+    return Err(Error::CustomError(
+        StatusCode::FORBIDDEN,
+        ErrorDetail::with_reason("forbidden"),
+    ));
+}</code></pre>
+<p>这里 token 已经有效，<code>auth.user</code> 也已经加载成功；只是业务规则不允许操作资源。错误构造方式参考 Loco 官方的 <a href="https://loco.rs/docs/how-to/handle-errors/">Handle errors</a>。</p>
+
+<h2>4. 测试要锁住两条边界</h2>
+<pre><code>// 没有身份
+assert_eq!(anonymous.status_code(), 401);
+
+// 有身份，但没有资源权限
+assert_eq!(non_owner.status_code(), 403);</code></pre>
+<p>不要把“没有 token”测成 403，也不要把“普通用户不能删别人的资源”测成 401；否则客户端无法决定是重新登录，还是显示权限不足。</p>
+
+<div class="quiz" id="q1"><p class="q">有效 JWT 但不是资源所有者，应该返回什么？</p>
+  <button data-ok="0">401</button><button data-ok="1">403</button><button data-ok="0">500</button><p class="fb" aria-live="polite"></p>
+</div>
+<div class="quiz" id="q2"><p class="q">缺少 Authorization header 时，业务授权代码会执行吗？</p>
+  <button data-ok="0">会执行</button><button data-ok="1">不会执行</button><button data-ok="0">只执行查询</button><p class="fb" aria-live="polite"></p>
+</div>
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      quiz.querySelectorAll('button').forEach(function (x) { x.classList.remove('right', 'wrong'); });
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = ok ? '答对。' : '再想一次：先确认身份，再判断权限。';
+    });
+  });
+});
+</script>
+
+<h2>主要阅读</h2>
+<p><a href="https://loco.rs/docs/how-to/jwt-auth/">Loco 官方：Protect a Route with JWT</a> · <a href="https://loco.rs/docs/how-to/handle-errors/">Loco 官方：Handle errors</a></p>
+<p>完成后可以继续问我：如何把“角色授权”抽成 Model 方法，并给它写 403 请求测试。</p>
+<nav class="next"><a href="0021-jwt-request-test.html">← 第 21 课：JWT 请求测试</a><a href="../reference/401-vs-403.html">打开速查 →</a></nav>
+</body>
+</html>
